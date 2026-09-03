@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dhwani - AI Music Editor</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">&#9835;</span>
+                <h1>Dhwani</h1>
+            </div>
+            <p class="tagline">AI Music Editor</p>
+        </header>
+
+        <div id="upload-screen" class="screen active">
+            <div class="upload-area" id="drop-zone">
+                <div class="upload-icon">&#127925;</div>
+                <h2>Upload your audio</h2>
+                <p>Drop an MP3, WAV, OGG, FLAC, or M4A file</p>
+                <input type="file" id="file-input" accept=".mp3,.wav,.ogg,.flac,.m4a" hidden>
+                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                    Choose File
+                </button>
+            </div>
+        </div>
+
+        <div id="editor-screen" class="screen">
+            <div class="editor-layout">
+                <div class="audio-panel">
+                    <div class="file-info">
+                        <span class="file-icon">&#127925;</span>
+                        <span id="file-name">-</span>
+                        <span class="file-meta" id="file-meta"></span>
+                    </div>
+
+                    <div class="waveform-container">
+                        <div id="waveform"></div>
+                        <div class="waveform-overlay" id="waveform-loading">
+                            Loading waveform...
+                        </div>
+                    </div>
+
+                    <div class="player-controls">
+                        <button class="btn btn-icon" id="btn-play" onclick="togglePlay()">
+                            &#9654;
+                        </button>
+                        <button class="btn btn-icon" onclick="seekBackward()">
+                            &#9194;
+                        </button>
+                        <button class="btn btn-icon" onclick="seekForward()">
+                            &#9193;
+                        </button>
+                        <span class="time-display">
+                            <span id="current-time">0:00</span> /
+                            <span id="total-time">0:00</span>
+                        </span>
+                        <input type="range" id="volume-slider" min="0" max="100" value="80"
+                               oninput="setVolume(this.value)">
+                        <span class="volume-icon">&#128266;</span>
+                    </div>
+
+                    <div class="versions-panel">
+                        <h3>Versions</h3>
+                        <div id="versions-list" class="versions-list">
+                            <div class="version-item active" data-version="0">
+                                <span class="version-dot"></span>
+                                Original
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-panel">
+                    <div class="chat-header">
+                        <span class="chat-icon">&#129302;</span>
+                        <h3>AI Assistant</h3>
+                    </div>
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message assistant">
+                            <div class="message-content">
+                                Hi! I'm your audio editing assistant. Tell me what you'd like to change about your track.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <div class="quick-actions">
+                            <button class="quick-btn" onclick="sendQuick('Make it louder')">Louder</button>
+                            <button class="quick-btn" onclick="sendQuick('Add reverb')">Reverb</button>
+                            <button class="quick-btn" onclick="sendQuick('Add bass boost')">Bass Boost</button>
+                            <button class="quick-btn" onclick="sendQuick('Normalize')">Normalize</button>
+                            <button class="quick-btn" onclick="sendQuick('Add compression')">Compress</button>
+                        </div>
+                        <form onsubmit="sendMessage(event)">
+                            <input type="text" id="chat-input"
+                                   placeholder="Describe the edit you want..."
+                                   autocomplete="off">
+                            <button type="submit" class="btn btn-primary">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7.12.6/dist/wavesurfer.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
