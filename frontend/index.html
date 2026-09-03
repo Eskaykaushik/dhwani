@@ -3,25 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dhwani - AI Music Editor</title>
+    <title>Dhwani — AI Music Editor</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app">
         <header class="header">
             <div class="logo">
-                <span class="logo-icon">&#9835;</span>
+                <div class="logo-icon">&#9835;</div>
                 <h1>Dhwani</h1>
             </div>
-            <p class="tagline">AI Music Editor</p>
+            <span class="tagline">AI Music Editor</span>
         </header>
 
+        <!-- Upload Screen -->
         <div id="upload-screen" class="screen active">
             <div class="upload-area" id="drop-zone">
-                <div class="upload-icon">&#127925;</div>
-                <h2>Upload your audio</h2>
-                <p>Drop an MP3, WAV, OGG, FLAC, or M4A file</p>
+                <div class="upload-icon-wrap">
+                    <span class="icon">&#127925;</span>
+                </div>
+                <h2>Drop your audio here</h2>
+                <p>MP3, WAV, OGG, FLAC, or M4A</p>
                 <input type="file" id="file-input" accept=".mp3,.wav,.ogg,.flac,.m4a" hidden>
                 <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
                     Choose File
@@ -29,75 +32,83 @@
             </div>
         </div>
 
+        <!-- Editor Screen -->
         <div id="editor-screen" class="screen">
             <div class="editor-layout">
+                <!-- Audio Panel -->
                 <div class="audio-panel">
                     <div class="file-info">
-                        <span class="file-icon">&#127925;</span>
-                        <span id="file-name">-</span>
-                        <span class="file-meta" id="file-meta"></span>
+                        <span class="fi-icon">&#127925;</span>
+                        <span class="fi-name" id="file-name">-</span>
+                        <span class="fi-meta" id="file-meta"></span>
                     </div>
 
-                    <div class="waveform-container">
+                    <div class="waveform-wrap">
                         <div id="waveform"></div>
-                        <div class="waveform-overlay" id="waveform-loading">
-                            Loading waveform...
+                        <div class="waveform-overlay" id="waveform-loading">Loading waveform&hellip;</div>
+                    </div>
+
+                    <div class="player-bar">
+                        <button class="p-btn" id="btn-back" onclick="seekBackward()" title="Back 5s">
+                            &#9194;
+                            <span class="shortcut">&larr;</span>
+                        </button>
+                        <button class="p-btn" id="btn-play" onclick="togglePlay()" title="Play / Pause">
+                            &#9654;
+                            <span class="shortcut">Space</span>
+                        </button>
+                        <button class="p-btn" id="btn-fwd" onclick="seekForward()" title="Forward 5s">
+                            &#9193;
+                            <span class="shortcut">&rarr;</span>
+                        </button>
+                        <div class="time">
+                            <span class="curr" id="current-time">0:00</span> / <span id="total-time">0:00</span>
+                        </div>
+                        <div class="vol-wrap">
+                            <span class="vol-icon" id="vol-toggle" onclick="toggleMute()">&#128266;</span>
+                            <input type="range" id="volume-slider" min="0" max="100" value="80"
+                                   oninput="setVolume(this.value)">
                         </div>
                     </div>
 
-                    <div class="player-controls">
-                        <button class="btn btn-icon" id="btn-play" onclick="togglePlay()">
-                            &#9654;
-                        </button>
-                        <button class="btn btn-icon" onclick="seekBackward()">
-                            &#9194;
-                        </button>
-                        <button class="btn btn-icon" onclick="seekForward()">
-                            &#9193;
-                        </button>
-                        <span class="time-display">
-                            <span id="current-time">0:00</span> /
-                            <span id="total-time">0:00</span>
-                        </span>
-                        <input type="range" id="volume-slider" min="0" max="100" value="80"
-                               oninput="setVolume(this.value)">
-                        <span class="volume-icon">&#128266;</span>
-                    </div>
-
                     <div class="versions-panel">
-                        <h3>Versions</h3>
+                        <h3>Version History</h3>
                         <div id="versions-list" class="versions-list">
-                            <div class="version-item active" data-version="0">
-                                <span class="version-dot"></span>
-                                Original
+                            <div class="v-item active">
+                                <span class="v-dot"></span>
+                                <span class="v-label">Original</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="chat-panel">
-                    <div class="chat-header">
-                        <span class="chat-icon">&#129302;</span>
+                <!-- Chat Panel -->
+                <div class="chat-panel" id="chat-panel">
+                    <div class="chat-head">
+                        <div class="ch-icon">&#129302;</div>
                         <h3>AI Assistant</h3>
+                        <span class="ch-badge">GPT</span>
                     </div>
                     <div class="chat-messages" id="chat-messages">
-                        <div class="message assistant">
-                            <div class="message-content">
-                                Hi! I'm your audio editing assistant. Tell me what you'd like to change about your track.
+                        <div class="msg assistant">
+                            <div class="msg-bubble">
+                                Hi! Tell me what you'd like to change about your track. Try something like
+                                <em>"make it louder"</em> or <em>"add reverb"</em>.
                             </div>
                         </div>
                     </div>
                     <div class="chat-input-area">
-                        <div class="quick-actions">
-                            <button class="quick-btn" onclick="sendQuick('Make it louder')">Louder</button>
-                            <button class="quick-btn" onclick="sendQuick('Add reverb')">Reverb</button>
-                            <button class="quick-btn" onclick="sendQuick('Add bass boost')">Bass Boost</button>
-                            <button class="quick-btn" onclick="sendQuick('Normalize')">Normalize</button>
-                            <button class="quick-btn" onclick="sendQuick('Add compression')">Compress</button>
+                        <div class="quick-row">
+                            <button class="q-btn" onclick="sendQuick('Make it louder')">Louder</button>
+                            <button class="q-btn" onclick="sendQuick('Add reverb')">Reverb</button>
+                            <button class="q-btn" onclick="sendQuick('Add bass boost')">Bass</button>
+                            <button class="q-btn" onclick="sendQuick('Normalize')">Normalize</button>
+                            <button class="q-btn" onclick="sendQuick('Add compression')">Compress</button>
+                            <button class="q-btn" onclick="sendQuick('Trim the first 10 seconds')">Trim 10s</button>
                         </div>
                         <form onsubmit="sendMessage(event)">
                             <input type="text" id="chat-input"
-                                   placeholder="Describe the edit you want..."
+                                   placeholder="Describe the edit..."
                                    autocomplete="off">
                             <button type="submit" class="btn btn-primary">Send</button>
                         </form>
@@ -106,6 +117,11 @@
             </div>
         </div>
     </div>
+
+    <button class="chat-fab" id="chat-fab" onclick="toggleChat()">
+        &#128172;
+        <span class="fab-badge" id="fab-badge"></span>
+    </button>
 
     <div id="toast" class="toast"></div>
 

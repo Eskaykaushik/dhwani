@@ -1,9 +1,11 @@
 const API = 'https://dhwani-api.onrender.com';
+
 let wavesurfer = null;
 let currentFileId = null;
 let isPlaying = false;
+let isMuted = false;
+let lastVolume = 80;
 
-// Elements
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const uploadScreen = document.getElementById('upload-screen');
@@ -11,178 +13,168 @@ const editorScreen = document.getElementById('editor-screen');
 const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const toast = document.getElementById('toast');
+const chatPanel = document.getElementById('chat-panel');
+const chatFab = document.getElementById('chat-fab');
 
-// Upload handling
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('drag-over');
-});
-
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('drag-over');
-});
-
-dropZone.addEventListener('drop', (e) => {
+/* ── Upload ── */
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
     e.preventDefault();
     dropZone.classList.remove('drag-over');
-    if (e.dataTransfer.files.length) {
-        uploadFile(e.dataTransfer.files[0]);
-    }
+    if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
 });
+fileInput.addEventListener('change', e => { if (e.target.files.length) uploadFile(e.target.files[0]); });
 
-fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length) {
-        uploadFile(e.target.files[0]);
-    }
-});
-
-async function uploadFile(file) {
+function uploadFile(file) {
     showToast('Uploading...', 'success');
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
-        const res = await fetch(`${API}/upload`, { method: 'POST', body: formData });
-        if (!res.ok) throw new Error('Upload failed');
-
-        const data = await res.json();
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API}/upload`);
+    xhr.upload.onprogress = () => {}; // progress visual handled by toast
+    xhr.onload = () => {
+        if (xhr.status !== 200) { showToast('Upload failed', 'error'); return; }
+        const data = JSON.parse(xhr.responseText);
         currentFileId = data.file_id;
 
         document.getElementById('file-name').textContent = data.filename;
         document.getElementById('file-meta').textContent =
-            `${formatTime(data.duration)} | ${data.sample_rate}Hz | ${data.channels}ch${data.bpm ? ' | ' + Math.round(data.bpm) + ' BPM' : ''}`;
+            `${fmtTime(data.duration)} · ${data.sample_rate}Hz · ${data.channels}ch${data.bpm ? ' · ' + Math.round(data.bpm) + ' BPM' : ''}`;
 
         uploadScreen.classList.remove('active');
         editorScreen.classList.add('active');
 
         initWaveform();
         loadVersions();
-        showToast('File loaded successfully', 'success');
-    } catch (err) {
-        console.error('Upload error:', err);
-        showToast('Failed to upload file', 'error');
-    }
+        showToast('File loaded', 'success');
+    };
+    xhr.onerror = () => showToast('Upload failed', 'error');
+    xhr.send(formData);
 }
 
-async function initWaveform() {
+/* ── Waveform ── */
+function initWaveform() {
     const loading = document.getElementById('waveform-loading');
-
-    if (wavesurfer) {
-        wavesurfer.destroy();
-    }
+    if (wavesurfer) wavesurfer.destroy();
 
     wavesurfer = WaveSurfer.create({
         container: '#waveform',
-        waveColor: '#555568',
-        progressColor: '#7c5cff',
-        cursorColor: '#a78bfa',
-        barWidth: 2,
-        barGap: 1,
-        barRadius: 2,
-        height: 100,
-        dragToSeek: true,
-        normalize: true,
+        waveColor: 'rgba(99,102,241,0.35)',
+        progressColor: 'rgba(20,184,166,0.8)',
+        cursorColor: '#14b8a6',
+        barWidth: 2, barGap: 1, barRadius: 2,
+        height: 80, dragToSeek: true, normalize: true,
     });
 
-    wavesurfer.on('ready', (duration) => {
+    wavesurfer.on('ready', dur => {
         loading.classList.add('hidden');
-        document.getElementById('total-time').textContent = formatTime(duration);
+        document.getElementById('total-time').textContent = fmtTime(dur);
     });
-
-    wavesurfer.on('timeupdate', (currentTime) => {
-        document.getElementById('current-time').textContent = formatTime(currentTime);
+    wavesurfer.on('timeupdate', t => {
+        document.getElementById('current-time').textContent = fmtTime(t);
     });
-
     wavesurfer.on('play', () => {
         isPlaying = true;
-        document.getElementById('btn-play').innerHTML = '&#9646;&#9646;';
-        document.getElementById('btn-play').classList.add('playing');
+        const btn = document.getElementById('btn-play');
+        btn.innerHTML = '&#9646;&#9646;<span class="shortcut">Space</span>';
+        btn.classList.add('playing');
     });
-
     wavesurfer.on('pause', () => {
         isPlaying = false;
-        document.getElementById('btn-play').innerHTML = '&#9654;';
-        document.getElementById('btn-play').classList.remove('playing');
+        const btn = document.getElementById('btn-play');
+        btn.innerHTML = '&#9654;<span class="shortcut">Space</span>';
+        btn.classList.remove('playing');
     });
 
     wavesurfer.setVolume(0.8);
     wavesurfer.load(`${API}/audio/${currentFileId}`);
 }
 
-function togglePlay() {
-    if (wavesurfer) {
-        wavesurfer.playPause();
+/* ── Playback ── */
+function togglePlay() { if (wavesurfer) wavesurfer.playPause(); }
+function seekForward() { if (wavesurfer) wavesurfer.setTime(wavesurfer.getCurrentTime() + 5); }
+function seekBackward() { if (wavesurfer) wavesurfer.setTime(Math.max(0, wavesurfer.getCurrentTime() - 5)); }
+function setVolume(v) { if (wavesurfer) wavesurfer.setVolume(v / 100); }
+
+function toggleMute() {
+    if (!wavesurfer) return;
+    isMuted = !isMuted;
+    const icon = document.getElementById('vol-toggle');
+    const slider = document.getElementById('volume-slider');
+    if (isMuted) {
+        lastVolume = parseInt(slider.value);
+        wavesurfer.setVolume(0);
+        slider.value = 0;
+        icon.innerHTML = '&#128263;';
+    } else {
+        wavesurfer.setVolume(lastVolume / 100);
+        slider.value = lastVolume;
+        icon.innerHTML = '&#128266;';
     }
 }
 
-function seekForward() {
-    if (wavesurfer) {
-        wavesurfer.setTime(wavesurfer.getCurrentTime() + 5);
-    }
-}
+/* ── Keyboard Shortcuts ── */
+document.addEventListener('keydown', e => {
+    const inInput = document.activeElement === chatInput;
+    if (inInput) return; // don't capture when typing
 
-function seekBackward() {
-    if (wavesurfer) {
-        wavesurfer.setTime(wavesurfer.getCurrentTime() - 5);
-    }
-}
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    if (e.code === 'ArrowRight') { e.preventDefault(); e.shiftKey ? seekForwardN(10) : seekForward(); }
+    if (e.code === 'ArrowLeft') { e.preventDefault(); e.shiftKey ? seekBackwardN(10) : seekBackward(); }
+});
 
-function setVolume(value) {
-    if (wavesurfer) {
-        wavesurfer.setVolume(value / 100);
-    }
-}
+function seekForwardN(s) { if (wavesurfer) wavesurfer.setTime(wavesurfer.getCurrentTime() + s); }
+function seekBackwardN(s) { if (wavesurfer) wavesurfer.setTime(Math.max(0, wavesurfer.getCurrentTime() - s)); }
 
-// Chat
+/* ── Chat ── */
 async function sendMessage(e) {
     if (e) e.preventDefault();
     const msg = chatInput.value.trim();
     if (!msg || !currentFileId) return;
-
     chatInput.value = '';
-    addMessage(msg, 'user');
-
-    const typing = addTypingIndicator();
-
+    addMsg(msg, 'user');
+    const typing = addTyping();
     try {
         const res = await fetch(`${API}/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ file_id: currentFileId, message: msg }),
         });
-
         typing.remove();
-
         if (!res.ok) throw new Error('Chat failed');
         const data = await res.json();
-
-        addMessage(data.reply, 'assistant', data.operation);
-    } catch (err) {
+        addMsg(data.reply, 'assistant', data.operation);
+    } catch {
         typing.remove();
-        addMessage('Sorry, something went wrong.', 'assistant');
+        addMsg('Something went wrong. Try again.', 'assistant');
     }
 }
 
-function sendQuick(text) {
-    chatInput.value = text;
-    sendMessage();
-}
+function sendQuick(t) { chatInput.value = t; sendMessage(); }
 
-function addMessage(text, role, operation = null) {
+function addMsg(text, role, operation = null) {
     const div = document.createElement('div');
-    div.className = `message ${role}`;
-
-    let html = `<div class="message-content">${escapeHtml(text)}</div>`;
+    div.className = `msg ${role}`;
+    let html = `<div class="msg-bubble">${esc(text)}</div>`;
 
     if (operation) {
+        const { icon, label, detail } = getOpLabel(operation);
         html += `
-            <div class="message-operation">
-                <pre>${JSON.stringify(operation, null, 2)}</pre>
-            </div>
-            <button class="apply-btn" onclick="applyOperation(this, ${escapeAttr(JSON.stringify(operation))})">
-                Apply Changes
-            </button>
-        `;
+            <div class="op-card">
+                <div class="op-header">
+                    <span class="op-icon">${icon}</span>
+                    <span>${label}</span>
+                </div>
+                ${detail ? `<span class="op-detail">${detail}</span>` : ''}
+                <span class="op-raw" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">{ } raw</span>
+                <pre style="display:none;font-size:10px;color:var(--text-muted);margin:0;white-space:pre-wrap;">${JSON.stringify(operation)}</pre>
+                <button class="apply-btn" onclick="applyOp(this, ${escAttr(JSON.stringify(operation))})">
+                    <span class="btn-label">Apply</span>
+                    <span class="spinner"></span>
+                </button>
+            </div>`;
     }
 
     div.innerHTML = html;
@@ -190,69 +182,58 @@ function addMessage(text, role, operation = null) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-function addTypingIndicator() {
+function addTyping() {
     const div = document.createElement('div');
-    div.className = 'message assistant';
-    div.innerHTML = `
-        <div class="message-content">
-            <div class="typing-indicator">
-                <span></span><span></span><span></span>
-            </div>
-        </div>
-    `;
+    div.className = 'msg assistant';
+    div.innerHTML = `<div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
     return div;
 }
 
-async function applyOperation(btn, operation) {
+/* ── Apply ── */
+async function applyOp(btn, op) {
     btn.disabled = true;
-    btn.textContent = 'Applying...';
-
+    btn.classList.add('loading');
     try {
         const res = await fetch(`${API}/apply`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ file_id: currentFileId, operation }),
+            body: JSON.stringify({ file_id: currentFileId, operation: op }),
         });
-
         if (!res.ok) throw new Error('Apply failed');
         const data = await res.json();
-
-        btn.textContent = 'Applied!';
-        btn.style.background = '#4ade80';
-
+        btn.classList.remove('loading');
+        btn.querySelector('.btn-label').textContent = 'Applied ✓';
+        btn.style.background = 'var(--success)';
         wavesurfer.load(`${API}/audio/${currentFileId}`);
         await loadVersions();
-        showToast(`Applied: Version ${data.version}`, 'success');
-    } catch (err) {
-        btn.textContent = 'Failed - Retry';
+        showToast(`Version ${data.version} applied`, 'success');
+    } catch {
+        btn.classList.remove('loading');
         btn.disabled = false;
-        showToast('Failed to apply changes', 'error');
+        btn.querySelector('.btn-label').textContent = 'Retry';
+        showToast('Apply failed', 'error');
     }
 }
 
+/* ── Versions ── */
 async function loadVersions() {
     if (!currentFileId) return;
-
     try {
         const res = await fetch(`${API}/versions/${currentFileId}`);
         const data = await res.json();
-
         const list = document.getElementById('versions-list');
         list.innerHTML = '';
 
-        const orig = document.createElement('div');
-        orig.className = 'version-item active';
-        orig.innerHTML = '<span class="version-dot"></span>Original';
-        orig.onclick = () => loadVersion(null, orig);
+        const orig = mkEl('div', 'v-item active', '<span class="v-dot"></span><span class="v-label">Original</span>');
+        orig.onclick = () => { loadVer(null, orig); };
         list.appendChild(orig);
 
-        data.versions.forEach((v, i) => {
-            const item = document.createElement('div');
-            item.className = 'version-item';
-            item.innerHTML = `<span class="version-dot"></span>v${v.version}: ${escapeHtml(v.operation)}`;
-            item.onclick = () => loadVersion(v.version, item);
+        data.versions.forEach(v => {
+            const item = mkEl('div', 'v-item',
+                `<span class="v-dot"></span><span class="v-label">v${v.version}: ${esc(v.operation)}</span>`);
+            item.onclick = () => { loadVer(v.version, item); };
             list.appendChild(item);
         });
     } catch (err) {
@@ -260,37 +241,60 @@ async function loadVersions() {
     }
 }
 
-function loadVersion(version, element) {
+function loadVer(version, el) {
     if (wavesurfer) {
-        const suffix = version ? `?version=${version}` : '';
-        wavesurfer.load(`${API}/audio/${currentFileId}${suffix}`);
+        const q = version ? `?version=${version}` : '';
+        wavesurfer.load(`${API}/audio/${currentFileId}${q}`);
     }
-
-    document.querySelectorAll('.version-item').forEach(item => item.classList.remove('active'));
-    if (element) element.classList.add('active');
+    document.querySelectorAll('.v-item').forEach(i => i.classList.remove('active'));
+    if (el) el.classList.add('active');
 }
 
-// Utils
-function formatTime(seconds) {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, '0')}`;
+/* ── Operation Labels ── */
+function getOpLabel(op) {
+    const map = {
+        trim:    { icon: '✂️', label: 'Trim', detail: () => `${fmtTime(op.start||0)} → ${fmtTime(op.end||0)}` },
+        volume:  { icon: '🔊', label: 'Volume', detail: () => `${op.gain>0?'+':''}${op.gain} dB` },
+        fade_in: { icon: '📈', label: 'Fade In', detail: () => `${op.duration||1}s` },
+        fade_out:{ icon: '📉', label: 'Fade Out', detail: () => `${op.duration||1}s` },
+        normalize:{ icon: '📊', label: 'Normalize', detail: () => null },
+        eq:      { icon: '🎛️', label: 'EQ', detail: () => `${op.frequency||1000}Hz ${op.gain>0?'+':''}${op.gain||0}dB` },
+        compress:{ icon: '📐', label: 'Compress', detail: () => `${op.threshold||-20}dB ratio ${op.ratio||4}:1` },
+        reverb:  { icon: '🌊', label: 'Reverb', detail: () => `wet ${Math.round((op.wet||0.5)*100)}%` },
+        delay:   { icon: '⏱️', label: 'Delay', detail: () => `${op.delay_time||0.5}s feedback ${Math.round((op.feedback||0.3)*100)}%` },
+        pitch:   { icon: '🎵', label: 'Pitch', detail: () => `${op.semitones>0?'+':''}${op.semitones} semitones` },
+        tempo:   { icon: '⚡', label: 'Tempo', detail: () => `${op.factor||1}x` },
+        layer:   { icon: '🎚️', label: 'Layer', detail: () => op.file_id || '' },
+    };
+    const info = map[op.operation] || { icon: '🔧', label: op.operation, detail: () => null };
+    return { icon: info.icon, label: info.label, detail: info.detail() };
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+/* ── Mobile Chat Toggle ── */
+function toggleChat() {
+    chatPanel.classList.toggle('open');
+    chatFab.classList.toggle('active');
+    chatFab.innerHTML = chatPanel.classList.contains('open')
+        ? '&#10005;'
+        : '&#128172;<span class="fab-badge" id="fab-badge"></span>';
 }
 
-function escapeAttr(str) {
-    return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+/* ── Utils ── */
+function fmtTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
 }
-
+function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+function escAttr(s) { return s.replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function mkEl(tag, cls, html) {
+    const el = document.createElement(tag);
+    el.className = cls;
+    el.innerHTML = html;
+    return el;
+}
 function showToast(msg, type = '') {
     toast.textContent = msg;
     toast.className = 'toast visible ' + type;
-    setTimeout(() => {
-        toast.classList.remove('visible');
-    }, 3000);
+    setTimeout(() => toast.classList.remove('visible'), 3000);
 }
