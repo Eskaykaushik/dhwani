@@ -1,4 +1,6 @@
-const API = 'https://dhwani-api.onrender.com';
+const API = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    ? `${location.protocol}//${location.hostname}:8000`
+    : 'https://dhwani-api.onrender.com';
 
 let wavesurfer = null;
 let currentFileId = null;
@@ -27,14 +29,27 @@ dropZone.addEventListener('drop', e => {
 fileInput.addEventListener('change', e => { if (e.target.files.length) uploadFile(e.target.files[0]); });
 
 function uploadFile(file) {
-    showToast('Uploading...', 'success');
+    const progressWrap = document.getElementById('upload-progress');
+    const progressBar = document.getElementById('upload-progress-bar');
+    const progressText = document.getElementById('upload-progress-text');
+    progressWrap.classList.add('active');
+    progressBar.style.width = '0%';
+    progressText.textContent = '0%';
+
     const formData = new FormData();
     formData.append('file', file);
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API}/upload`);
-    xhr.upload.onprogress = () => {}; // progress visual handled by toast
+    xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = pct + '%';
+            progressText.textContent = pct + '%';
+        }
+    };
     xhr.onload = () => {
+        progressWrap.classList.remove('active');
         if (xhr.status !== 200) { showToast('Upload failed', 'error'); return; }
         const data = JSON.parse(xhr.responseText);
         currentFileId = data.file_id;
@@ -50,7 +65,7 @@ function uploadFile(file) {
         loadVersions();
         showToast('File loaded', 'success');
     };
-    xhr.onerror = () => showToast('Upload failed', 'error');
+    xhr.onerror = () => { progressWrap.classList.remove('active'); showToast('Upload failed', 'error'); };
     xhr.send(formData);
 }
 
