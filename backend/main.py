@@ -9,7 +9,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from ai_assistant import parse_audio_request
 from audio_engine import (
@@ -20,6 +20,7 @@ from audio_engine import (
     get_current_file,
     get_specific_file,
     load_versions,
+    to_mp3,
 )
 from models import (
     ApplyRequest,
@@ -143,7 +144,13 @@ async def download_audio(file_id: str, version: int | None = None):
     current = get_specific_file(file_id, version)
     if not current:
         raise HTTPException(status_code=404, detail="Audio not found")
-    return FileResponse(current, filename=Path(current).name)
+    mp3 = await asyncio.to_thread(to_mp3, current)
+    name = Path(current).stem + ".mp3"
+    return Response(
+        content=mp3,
+        media_type="audio/mpeg",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    )
 
 
 @app.get("/waveform/{file_id}")

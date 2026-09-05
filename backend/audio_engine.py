@@ -258,3 +258,33 @@ def apply_operation(file_id: str, operation: dict) -> tuple:
         except OSError:
             pass
         raise
+
+
+MP3_SAMPLE_RATES = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000}
+
+
+def to_mp3(filepath: str, bitrate: int = 320) -> bytes:
+    import lameenc
+
+    y, sr = sf.read(filepath, dtype="float32", always_2d=True)
+    y = y.T  # (channels, samples)
+
+    if y.shape[0] == 1:
+        y = np.repeat(y, 2, axis=0)
+
+    if sr not in MP3_SAMPLE_RATES:
+        target = 48000 if sr > 48000 else 44100
+        y = librosa.resample(y, orig_sr=sr, target_sr=target)
+        sr = target
+
+    pcm = np.rint(np.clip(y, -1.0, 1.0) * 32767).astype(np.int16).T
+    interleaved = pcm.reshape(-1)
+
+    encoder = lameenc.Encoder()
+    encoder.set_bit_rate(bitrate)
+    encoder.set_in_sample_rate(sr)
+    encoder.set_channels(2)
+    encoder.set_quality(2)
+    data = bytearray(encoder.encode(interleaved.tobytes()))
+    data += encoder.flush()
+    return bytes(data)

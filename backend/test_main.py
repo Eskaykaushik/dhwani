@@ -179,6 +179,19 @@ def test_apply_valid_operation_creates_version(client):
     assert len(versions.json()["versions"]) == 1
 
 
+def test_download_returns_320kbps_mp3(client):
+    up = client.post("/upload", files={"file": ("t.wav", make_wav(SKIP_AUDIO_DURATION), "audio/wav")})
+    file_id = up.json()["file_id"]
+
+    dl = client.get(f"/download/{file_id}")
+    assert dl.status_code == 200
+    assert dl.headers["content-type"] == "audio/mpeg"
+    assert dl.headers["content-disposition"].startswith("attachment; filename=")
+    assert dl.headers["content-disposition"].endswith('.mp3"')
+    body = dl.content
+    assert body.startswith(b"ID3") or body[:2] == b"\xff\xfb"
+
+
 def test_concurrent_applies_get_unique_versions(tmp_path, monkeypatch):
     import concurrent.futures
 
