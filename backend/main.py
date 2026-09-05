@@ -44,7 +44,10 @@ chat_histories = {}
 
 
 def get_allowed_origins():
-    raw = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000")
+    raw = os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://localhost:8000,http://127.0.0.1:8000,https://eskaykaushik.github.io",
+    )
     if raw.strip() == "*":
         return ["*"]
     try:
