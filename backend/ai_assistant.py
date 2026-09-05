@@ -14,7 +14,7 @@ MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
 
 KNOWN_OPS = {
     "trim", "volume", "fade_in", "fade_out", "normalize",
-    "eq", "compress", "reverb", "delay", "pitch", "tempo", "layer",
+    "eq", "compress", "reverb", "delay", "pitch", "tempo", "beat",
 }
 
 _client = None
@@ -43,7 +43,7 @@ Available operations:
 - "delay": Add delay/echo. Params: delay_time (seconds), feedback (0.0 to 1.0)
 - "pitch": Change pitch. Params: semitones (positive = up, negative = down)
 - "tempo": Change tempo. Params: factor (1.0 = same, 1.5 = 50% faster, 0.5 = half speed)
-- "layer": Add another audio as layer. Params: file_id (of the layer), gain (dB)
+- "beat": Overlay a synthesized beat/drum layer (kick, snare, hi-hats) on the track. Params: intensity (0.0 to 1.0, higher = stronger/more prominent, default 0.45); use a higher intensity for requests like "strong beat"
 
 Respond with a JSON object containing:
 1. "reply": A friendly message explaining what you'll do
@@ -58,6 +58,8 @@ Example response 2 (multi-operation):
 
 Be helpful and conversational. If the request is unclear, ask for clarification.
 If the user just wants to chat, respond normally with operation as null; do not include the literal text "operation": null if there is an actual edit to make.
+
+Important: Only the currently loaded track exists. Do NOT emit a "layer" operation — there is no second audio file to mix in. If the user asks to add a beat, drums, or rhythm, use the "beat" operation. If they ask to mix in another file, kindly explain this single-track editor can't layer external files, and offer what's possible (beat layer, reverb, EQ, tempo, compression).
 
 Current audio context:
 - Duration: __DURATION__ seconds
@@ -139,6 +141,16 @@ def api_error_reply(exc: Exception, max_tokens: int | None = None) -> dict:
     }
 
 
+def _refers_to_layer(value) -> bool:
+    if isinstance(value, dict) and isinstance(value.get("operation"), str):
+        return value["operation"].strip() == "layer"
+    if isinstance(value, str):
+        return value.strip() == "layer"
+    if isinstance(value, list):
+        return any(_refers_to_layer(item) for item in value)
+    return False
+
+
 def normalize_result(result: dict) -> dict:
     if not isinstance(result, dict):
         result = {}
@@ -146,6 +158,16 @@ def normalize_result(result: dict) -> dict:
         result["reply"] = "Done!"
 
     operations = result.get("operations")
+
+    if _refers_to_layer(result.get("operation")) or _refers_to_layer(operations):
+        result["reply"] = (
+            "I can only edit the currently loaded track — layering a separate "
+            "audio file isn't supported. I can drop a synthesized beat layer "
+            "on it instead, e.g. \"add a strong beat\"."
+        )
+        result["operation"] = None
+        result["operations"] = None
+        return result
 
     coerced = coerce_operation(result.get("operation"))
     if coerced is None and isinstance(operations, list):

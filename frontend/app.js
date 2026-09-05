@@ -482,7 +482,7 @@ function getOpLabel(op) {
         delay:   { icon: '⏱️', label: 'Delay', detail: () => `${op.delay_time||0.5}s feedback ${Math.round((op.feedback||0.3)*100)}%` },
         pitch:   { icon: '🎵', label: 'Pitch', detail: () => `${op.semitones>0?'+':''}${op.semitones} semitones` },
         tempo:   { icon: '⚡', label: 'Tempo', detail: () => `${op.factor||1}x` },
-        layer:   { icon: '🎚️', label: 'Layer', detail: () => op.file_id || '' },
+        beat:   { icon: '🥁', label: 'Beat Layer', detail: () => `mix ${Math.round((op.intensity ?? 0.45) * 100)}%` },
     };
     const info = map[op.operation] || { icon: '🔧', label: op.operation || 'Edit', detail: () => null };
     return { icon: info.icon, label: info.label, detail: info.detail() };

@@ -61,6 +61,16 @@ def test_coerce_operation_normalizes_shapes():
     assert ai_assistant.coerce_operation("bogus") is None
     assert ai_assistant.coerce_operation({"operation": "bogus"}) is None
     assert ai_assistant.coerce_operation(123) is None
+    assert ai_assistant.coerce_operation("beat") == {"operation": "beat"}
+    assert ai_assistant.coerce_operation({"operation": "layer", "file_id": "abc12345"}) is None
+
+
+def test_normalize_result_rejects_layer():
+    result = ai_assistant.normalize_result(
+        {"reply": "layering it now", "operation": {"operation": "layer", "file_id": "abc12345"}}
+    )
+    assert result["operation"] is None
+    assert "isn't supported" in result["reply"]
 
 
 def test_normalize_result_picks_operations_first():
@@ -190,6 +200,28 @@ def test_download_returns_320kbps_mp3(client):
     assert dl.headers["content-disposition"].endswith('.mp3"')
     body = dl.content
     assert body.startswith(b"ID3") or body[:2] == b"\xff\xfb"
+
+
+def test_beat_layer_creates_version_and_changes_audio(client):
+    up = client.post("/upload", files={"file": ("t.wav", make_wav(SKIP_AUDIO_DURATION), "audio/wav")})
+    file_id = up.json()["file_id"]
+    original = client.get(f"/audio/{file_id}").content
+
+    resp = client.post(
+        "/apply",
+        json={"file_id": file_id, "operation": {"operation": "beat", "intensity": 5}},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["version"] == 1
+
+    versions = client.get(f"/versions/{file_id}").json()["versions"]
+    assert len(versions) == 1
+    assert versions[0]["operation"].startswith("beat")
+    assert versions[0]["operation"].endswith("%") or "100%" in versions[0]["operation"]
+
+    altered = client.get(f"/audio/{file_id}").content
+    assert len(altered) > 0
+    assert altered != original
 
 
 def test_concurrent_applies_get_unique_versions(tmp_path, monkeypatch):

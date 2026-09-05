@@ -121,6 +121,7 @@ def add_version(file_id: str, operation: str) -> tuple:
 
 
 def apply_operation(file_id: str, operation: dict) -> tuple:
+
     current = get_current_file(file_id)
     if not current:
         raise ValueError("File not found")
@@ -222,6 +223,24 @@ def apply_operation(file_id: str, operation: dict) -> tuple:
         y = librosa.resample(y, orig_sr=sr, target_sr=int(sr * factor))
         sr = int(sr * factor)
 
+    elif op_type == "beat":
+        raw = operation.get("intensity")
+        intensity = float(raw) if isinstance(raw, (int, float)) and raw is not None else 0.45
+        intensity = max(0.0, min(1.0, intensity))
+
+        bpm = _beat_bpm(y, sr)
+        left, right = _synth_beat_drums(y.shape[1], sr, bpm)
+
+        peak = max(1e-9, float(np.max(np.abs(left))), float(np.max(np.abs(right))))
+        drums_l = left / peak * intensity
+        drums_r = right / peak * intensity
+
+        if y.shape[0] > 1:
+            drums = np.stack([drums_l, drums_r])
+        else:
+            drums = ((drums_l + drums_r) / 2.0)[None, :]
+        y = np.clip(y + drums, -0.95, 0.95)
+
     else:
         raise ValueError(f"Unknown operation: {op_type}")
 
@@ -238,6 +257,8 @@ def apply_operation(file_id: str, operation: dict) -> tuple:
         op_name = f"reverb (wet: {operation.get('wet', 0.5)})"
     elif op_type == "pitch":
         op_name = f"pitch ({operation.get('semitones', 0)} semitones)"
+    elif op_type == "beat":
+        op_name = f"beat ({intensity:.0%})"
 
     fd, tmp_path = tempfile.mkstemp(dir=str(OUTPUT_DIR), suffix=".wav")
     os.close(fd)
@@ -261,6 +282,63 @@ def apply_operation(file_id: str, operation: dict) -> tuple:
 
 
 MP3_SAMPLE_RATES = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000}
+
+
+def _beat_bpm(y: np.ndarray, sr: int) -> float:
+    mono = np.mean(y, axis=0) if y.ndim > 1 else np.asarray(y)
+    try:
+        tempo, _ = librosa.beat.beat_track(y=mono, sr=sr)
+        bpm = float(np.atleast_1d(tempo)[0])
+    except Exception:
+        bpm = 0.0
+    if not np.isfinite(bpm) or bpm < 40 or bpm > 220:
+        bpm = 120.0
+    return bpm
+
+
+def _add_hit(buf: np.ndarray, sig: np.ndarray, start: int):
+    if start >= len(buf):
+        return
+    n = min(len(sig), len(buf) - start)
+    if n <= 0:
+        return
+    buf[start:start + n] += sig[:n]
+
+
+def _synth_beat_drums(total_samples: int, sr: int, bpm: float) -> tuple:
+    nyq = sr / 2.0
+    beat_samples = max(1, round((60.0 / bpm) * sr))
+    n_beats = max(1, (total_samples + beat_samples - 1) // beat_samples)
+
+    t_kick = np.arange(int(0.22 * sr)) / sr
+    freq = 45 + 100 * np.exp(-t_kick / 0.02)
+    freq = np.minimum(freq, nyq * 0.8)
+    phase = 2 * np.pi * np.cumsum(freq) / sr
+    kick_env = np.exp(-t_kick / 0.16)
+    sub = np.sin(2 * np.pi * min(55, nyq * 0.8) * t_kick) * np.exp(-t_kick / 0.22) * 0.5
+    kick_sig = np.clip(np.sin(phase) * kick_env * 0.6 + sub, -1, 1)
+
+    t_snare = np.arange(int(0.14 * sr)) / sr
+    noise = np.random.randn(len(t_snare)) * np.exp(-t_snare / 0.10)
+    tone = np.sin(2 * np.pi * min(190, nyq * 0.8) * t_snare) * np.exp(-t_snare / 0.09)
+    snare_sig = np.clip(noise * 0.8 + tone * 0.25, -1, 1)
+
+    t_hat = np.arange(int(0.05 * sr)) / sr
+    hat_sig = np.clip(np.random.randn(len(t_hat)) * np.exp(-t_hat / 0.018), -1, 1) * 0.5
+
+    left = np.zeros(total_samples)
+    right = np.zeros(total_samples)
+    half = max(1, beat_samples // 2)
+    for i in range(n_beats):
+        start = i * beat_samples
+        _add_hit(left, kick_sig, start)
+        _add_hit(right, kick_sig, start)
+        if i % 4 in (1, 3):
+            _add_hit(left, snare_sig * 0.85, start)
+            _add_hit(right, snare_sig * 1.15, start)
+        _add_hit(left, hat_sig * 1.15, start + half)
+        _add_hit(right, hat_sig * 0.85, start + half)
+    return left, right
 
 
 def to_mp3(filepath: str, bitrate: int = 320) -> bytes:
