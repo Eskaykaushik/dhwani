@@ -21,6 +21,28 @@ const chatFab = document.getElementById('chat-fab');
 const chatToBottom = document.getElementById('chat-to-bottom');
 const fabBadge = document.getElementById('fab-badge');
 
+/* ── Upload: example cycler ── */
+const EXAMPLES = [
+    'Make it louder',
+    'Add reverb at 0:30',
+    'Trim the first 10 seconds',
+    'Boost the bass',
+    'Add compression',
+    'Normalize the volume',
+];
+let exIdx = 0;
+function cycleExamples() {
+    const chip = document.getElementById('ex-chip');
+    if (!chip) return;
+    chip.classList.add('swap');
+    setTimeout(() => {
+        exIdx = (exIdx + 1) % EXAMPLES.length;
+        chip.textContent = `\u201C${EXAMPLES[exIdx]}\u201D`;
+        chip.classList.remove('swap');
+    }, 260);
+}
+setInterval(cycleExamples, 2600);
+
 /* ── Upload ── */
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));

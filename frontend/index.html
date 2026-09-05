@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dhwani — AI Music Editor</title>
-    <link rel="stylesheet" href="style.css?v=14">
+    <link rel="stylesheet" href="style.css?v=15">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -19,6 +19,11 @@
 
         <!-- Upload Screen -->
         <div id="upload-screen" class="screen active">
+            <div class="upload-hero">
+                <p class="hero-eyebrow">Dhwani &middot; AI Music Editor</p>
+                <h1 class="hero-title">Describe the edit. <span>Dhwani</span> does the rest.</h1>
+                <p class="hero-sub">Drop a track, tell Dhwani what to change in plain words, preview the result, and download as MP3.</p>
+            </div>
             <div class="upload-area" id="drop-zone">
                 <div id="upload-idle">
                     <div class="upload-icon-wrap">
@@ -45,6 +50,10 @@
                         </svg>
                     </div>
                 </div>
+            </div>
+            <div class="ex-cycler">
+                <span class="ex-label">Try:</span>
+                <span class="ex-chip" id="ex-chip">&ldquo;Make it louder&rdquo;</span>
             </div>
         </div>
 
@@ -178,6 +187,6 @@
     <div id="toast" class="toast"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7.12.6/dist/wavesurfer.min.js"></script>
-    <script src="app.js?v=12"></script>
+    <script src="app.js?v=13"></script>
 </body>
 </html>
