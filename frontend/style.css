@@ -83,7 +83,9 @@ body {
     font-weight: 500;
 }
 .site-footer a:hover { text-decoration: underline; }
-body.app-editor .site-footer { display: none; }
+@media (min-width: 801px) {
+    body.app-editor .site-footer { display: none; }
+}
 
 /* ── Screens ── */
 .app {
@@ -671,6 +673,8 @@ body.chat-open .editor-layout { padding-right: 380px; }
 /* ── Responsive ── */
 @media (max-width: 800px) {
     .tagline { display: none; }
+
+    .site-footer { padding: 20px 16px; }
 
     .editor-layout { flex-direction: column; padding-right: 0; }
     body.chat-open .editor-layout { padding-right: 0; }

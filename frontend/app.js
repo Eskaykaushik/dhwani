@@ -4,6 +4,7 @@ const API = location.hostname === 'localhost' || location.hostname === '127.0.0.
 
 let wavesurfer = null;
 let currentFileId = null;
+let currentVersion = 0;
 let isPlaying = false;
 let isMuted = false;
 let lastVolume = 80;
@@ -67,6 +68,7 @@ function uploadFile(file) {
         }
         const data = JSON.parse(xhr.responseText);
         currentFileId = data.file_id;
+        currentVersion = 0;
 
         document.getElementById('file-name').textContent = data.filename;
         document.getElementById('file-meta').textContent =
@@ -347,12 +349,14 @@ async function applyOp(btn, op) {
         });
         if (!res.ok) throw new Error('Apply failed');
         const data = await res.json();
+        currentVersion = data.version;
         if (btn) {
             btn.classList.remove('loading');
             btn.querySelector('.btn-label').textContent = 'Applied ✓';
             btn.style.background = 'var(--success)';
             spawnBurst(btn);
         }
+        showWaveformLoading();
         wavesurfer.load(`${API}/audio/${currentFileId}`);
         await loadVersions();
         showToast(`Version ${data.version} applied`, 'success');
@@ -377,22 +381,23 @@ async function loadVersions() {
         const list = document.getElementById('versions-list');
         list.innerHTML = '';
 
-        const orig = mkEl('div', 'v-item active',
+        const orig = mkEl('div', 'v-item',
             '<span class="v-dot"></span><span class="v-label">Original</span><button class="v-dl" title="Download" onclick="event.stopPropagation(); downloadVer(0)">&#11015;</button>');
+        orig.dataset.version = '0';
         orig.onclick = () => { loadVer(0, orig); };
         list.appendChild(orig);
 
         data.versions.forEach(v => {
             const item = mkEl('div', 'v-item',
                 `<span class="v-dot"></span><span class="v-label">v${v.version}: ${esc(v.operation)}</span><button class="v-dl" title="Download" onclick="event.stopPropagation(); downloadVer(${v.version})">&#11015;</button>`);
+            item.dataset.version = String(v.version);
             item.onclick = () => { loadVer(v.version, item); };
             list.appendChild(item);
         });
 
-        if (data.versions.length) {
-            const last = data.versions[data.versions.length - 1];
-            setVersionsActive(`v${last.version}`);
-        }
+        document.querySelectorAll('.v-item').forEach(i =>
+            i.classList.toggle('active', i.dataset.version === String(currentVersion)));
+        setVersionsActive(currentVersion ? `v${currentVersion}` : 'v0');
     } catch (err) {
         console.error('Failed to load versions');
     }
@@ -408,14 +413,27 @@ function toggleVersions() {
     document.getElementById('fi-versions').classList.toggle('open');
 }
 
+function closeVersions() {
+    document.getElementById('versions-dropdown').classList.remove('open');
+    document.getElementById('fi-versions').classList.remove('open');
+}
+
+function showWaveformLoading() {
+    const loading = document.getElementById('waveform-loading');
+    if (loading) loading.classList.remove('hidden');
+}
+
 function loadVer(version, el) {
+    currentVersion = version || 0;
+    showWaveformLoading();
     if (wavesurfer) {
         const q = version ? `?version=${version}` : '?version=0';
         wavesurfer.load(`${API}/audio/${currentFileId}${q}`);
     }
     document.querySelectorAll('.v-item').forEach(i => i.classList.remove('active'));
     if (el) el.classList.add('active');
-    setVersionsActive(version ? `v${version}` : 'v0');
+    setVersionsActive(currentVersion ? `v${currentVersion}` : 'v0');
+    closeVersions();
 }
 
 function downloadVer(version) {
