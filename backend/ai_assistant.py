@@ -89,6 +89,7 @@ def parse_audio_request(user_message: str, audio_context: dict, history: list | 
     messages.append({"role": "user", "content": user_message})
 
     max_tokens = 700
+    error: Exception | None = None
 
     try:
         response = get_client().chat.completions.create(
@@ -101,7 +102,8 @@ def parse_audio_request(user_message: str, audio_context: dict, history: list | 
         content = response.choices[0].message.content
     except Exception as exc:
         logger.exception("Groq API call failed")
-        return api_error_reply(exc, max_tokens)
+        error = exc
+        content = None
 
     result = try_parse_json(content)
     if result is not None:
@@ -110,6 +112,9 @@ def parse_audio_request(user_message: str, audio_context: dict, history: list | 
     retry = retry_plain_text(messages, max_tokens)
     if retry is not None:
         return normalize_result(retry)
+
+    if error is not None:
+        return api_error_reply(error, max_tokens)
 
     return {
         "reply": "Sorry, I couldn't understand that. Could you rephrase your request?",
@@ -181,7 +186,13 @@ def try_parse_json(content):
         return json.loads(content)
     except Exception:
         logger.debug("Model output was not valid JSON: %r", content or "")
-    match = re.search(r'\{[^{}]*\}', content, re.DOTALL)
+    if "```json" in content:
+        clean = content.split("```json")[-1].split("```")[0].strip()
+        try:
+            return json.loads(clean)
+        except Exception:
+            logger.debug("JSON fence extract did not parse")
+    match = re.search(r'\{.*\}', content, re.DOTALL)
     if match:
         try:
             return json.loads(match.group(0))

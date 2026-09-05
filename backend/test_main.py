@@ -77,6 +77,15 @@ def test_normalize_result_defaults_reply():
     assert result["operation"] == {"operation": "volume"}
 
 
+def test_try_parse_json_extracts_from_noise():
+    assert ai_assistant.try_parse_json(None) is None
+    assert ai_assistant.try_parse_json("") is None
+    assert ai_assistant.try_parse_json("just text") is None
+    messy = '\n thinking\nLet me weigh options.\n{"reply": "ok", "operation": {"volume": {"gain": 6}}}'
+    assert ai_assistant.try_parse_json(messy)["operation"] == {"volume": {"gain": 6}}
+    assert ai_assistant.try_parse_json('prefix {"a": 1} suffix') == {"a": 1}
+
+
 def test_health(client):
     resp = client.get("/health")
     assert resp.status_code == 200
