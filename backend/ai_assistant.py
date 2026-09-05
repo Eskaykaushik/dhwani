@@ -10,8 +10,16 @@ load_dotenv()
 
 logger = logging.getLogger("dhwani")
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
+
+_client = None
+
+
+def get_client() -> Groq:
+    global _client
+    if _client is None:
+        _client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    return _client
 
 AUDIO_OPERATIONS_PROMPT = """You are an AI audio editing assistant for a music editor called Dhwani.
 
@@ -75,7 +83,7 @@ def parse_audio_request(user_message: str, audio_context: dict, history: list | 
     messages.append({"role": "user", "content": user_message})
 
     try:
-        response = client.chat.completions.create(
+        response = get_client().chat.completions.create(
             model=MODEL,
             messages=messages,
             temperature=0.7,
@@ -120,7 +128,7 @@ def try_parse_json(content):
 
 def retry_plain_text(messages):
     try:
-        response = client.chat.completions.create(
+        response = get_client().chat.completions.create(
             model=MODEL,
             messages=messages,
             temperature=0.7,
