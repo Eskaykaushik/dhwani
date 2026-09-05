@@ -103,6 +103,8 @@ function initWaveform() {
     const loading = document.getElementById('waveform-loading');
     if (wavesurfer) wavesurfer.destroy();
 
+    initWaveformSparkles();
+
     wavesurfer = WaveSurfer.create({
         container: '#waveform',
         waveColor: 'rgba(99,102,241,0.35)',
@@ -124,16 +126,44 @@ function initWaveform() {
         const btn = document.getElementById('btn-play');
         btn.innerHTML = '&#9646;&#9646;<span class="shortcut">Space</span>';
         btn.classList.add('playing');
+        const wrap = document.getElementById('waveform-wrap');
+        if (wrap) wrap.classList.add('playing');
     });
     wavesurfer.on('pause', () => {
         isPlaying = false;
         const btn = document.getElementById('btn-play');
         btn.innerHTML = '&#9654;<span class="shortcut">Space</span>';
         btn.classList.remove('playing');
+        const wrap = document.getElementById('waveform-wrap');
+        if (wrap) wrap.classList.remove('playing');
     });
 
     wavesurfer.setVolume(0.8);
     wavesurfer.load(`${API}/audio/${currentFileId}`);
+}
+
+function initWaveformSparkles() {
+    const wrap = document.getElementById('waveform-wrap');
+    if (!wrap) return;
+    let box = wrap.querySelector('.wf-sparkles');
+    if (!box) {
+        box = document.createElement('div');
+        box.className = 'wf-sparkles';
+        wrap.appendChild(box);
+    }
+    box.innerHTML = '';
+    const glyphs = ['✦', '✧', '♪', '♫', '✺'];
+    for (let i = 0; i < 14; i++) {
+        const sp = document.createElement('span');
+        sp.className = 'sp';
+        sp.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+        sp.style.left = (4 + Math.random() * 92) + '%';
+        sp.style.top = (8 + Math.random() * 70) + '%';
+        sp.style.fontSize = (9 + Math.random() * 8) + 'px';
+        sp.style.animationDelay = (Math.random() * 3) + 's';
+        sp.style.animationDuration = (1.6 + Math.random() * 1.8) + 's';
+        box.appendChild(sp);
+    }
 }
 
 /* ── Playback ── */
@@ -180,6 +210,7 @@ async function sendMessage(e) {
     chatInput.value = '';
     addMsg(msg, 'user');
     const typing = addTyping();
+    setAvatarThinking(true);
     try {
         const res = await fetch(`${API}/chat`, {
             method: 'POST',
@@ -187,42 +218,90 @@ async function sendMessage(e) {
             body: JSON.stringify({ file_id: currentFileId, message: msg }),
         });
         typing.remove();
+        setAvatarThinking(false);
         if (!res.ok) throw new Error('Chat failed');
         const data = await res.json();
-        addMsg(data.reply, 'assistant', data.operation);
+        await addMsg(data.reply, 'assistant', data.operation);
+        avatarPop();
     } catch {
         typing.remove();
+        setAvatarThinking(false);
         addMsg('Something went wrong. Try again.', 'assistant');
     }
 }
 
 function sendQuick(t) { chatInput.value = t; sendMessage(); }
 
+function setAvatarThinking(on) {
+    const av = document.getElementById('ch-avatar');
+    if (!av) return;
+    av.classList.toggle('thinking', on);
+}
+
+function avatarPop() {
+    const av = document.getElementById('ch-avatar');
+    if (!av) return;
+    av.classList.remove('pop');
+    void av.offsetWidth;
+    av.classList.add('pop');
+}
+
 function addMsg(text, role, operation = null) {
     const div = document.createElement('div');
-    div.className = `msg ${role}`;
-    let html = `<div class="msg-bubble">${esc(text)}</div>`;
-
-    if (operation) {
-        const { icon, label, detail } = getOpLabel(operation);
-        html += `
-            <div class="op-card">
-                <div class="op-header">
-                    <span class="op-icon">${icon}</span>
-                    <span>${label}</span>
-                </div>
-                ${detail ? `<span class="op-detail">${detail}</span>` : ''}
-                <span class="op-raw" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">{ } raw</span>
-                <pre style="display:none;font-size:10px;color:var(--text-muted);margin:0;white-space:pre-wrap;">${JSON.stringify(operation)}</pre>
-                <button class="apply-btn" onclick="applyOp(this, ${escAttr(JSON.stringify(operation))})">
-                    <span class="btn-label">Apply</span>
-                    <span class="spinner"></span>
-                </button>
-            </div>`;
-    }
-
-    div.innerHTML = html;
+    div.className = `msg ${role} msg-in`;
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    div.appendChild(bubble);
     chatMessages.appendChild(div);
+    scrollChatToBottom();
+
+    if (role === 'assistant') {
+        return new Promise(resolve => {
+            typeText(bubble, text, () => {
+                if (operation) appendOperationCard(div, operation);
+                resolve();
+            });
+        });
+    }
+    bubble.textContent = text;
+    return Promise.resolve();
+}
+
+function typeText(el, text, done) {
+    el.classList.add('typing-in');
+    let i = 0;
+    const STEP = 12;
+    const speed = Math.max(5, Math.min(14, 4000 / Math.max(text.length, 1)));
+    (function tick() {
+        i += STEP;
+        el.textContent = text.slice(0, i);
+        scrollChatToBottom();
+        if (i < text.length) {
+            setTimeout(tick, speed);
+        } else {
+            el.classList.remove('typing-in');
+            if (done) done();
+        }
+    })();
+}
+
+function appendOperationCard(div, operation) {
+    const { icon, label, detail } = getOpLabel(operation);
+    const card = document.createElement('div');
+    card.className = 'op-card';
+    card.innerHTML = `
+        <div class="op-header">
+            <span class="op-icon">${icon}</span>
+            <span>${label}</span>
+        </div>
+        ${detail ? `<span class="op-detail">${detail}</span>` : ''}
+        <span class="op-raw" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">{ } raw</span>
+        <pre style="display:none;font-size:10px;color:var(--text-muted);margin:0;white-space:pre-wrap;">${JSON.stringify(operation)}</pre>
+        <button class="apply-btn" onclick="applyOp(this, ${escAttr(JSON.stringify(operation))})">
+            <span class="btn-label">Apply</span>
+            <span class="spinner"></span>
+        </button>`;
+    div.appendChild(card);
     scrollChatToBottom();
 }
 
@@ -250,6 +329,7 @@ async function applyOp(btn, op) {
         btn.classList.remove('loading');
         btn.querySelector('.btn-label').textContent = 'Applied ✓';
         btn.style.background = 'var(--success)';
+        spawnBurst(btn);
         wavesurfer.load(`${API}/audio/${currentFileId}`);
         await loadVersions();
         showToast(`Version ${data.version} applied`, 'success');
@@ -384,3 +464,39 @@ function showToast(msg, type = '') {
     toast.className = 'toast visible ' + type;
     setTimeout(() => toast.classList.remove('visible'), 3000);
 }
+
+/* ── Magic: sparkle burst ── */
+function spawnBurst(el) {
+    const rect = el.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    for (let i = 0; i < 12; i++) {
+        const s = document.createElement('span');
+        s.className = 'sp-burst';
+        const ang = (Math.PI * 2 * i) / 12 + Math.random() * 0.5;
+        const dist = 40 + Math.random() * 40;
+        s.style.left = x + 'px';
+        s.style.top = y + 'px';
+        s.style.setProperty('--bx', Math.cos(ang) * dist + 'px');
+        s.style.setProperty('--by', Math.sin(ang) * dist + 'px');
+        s.style.background = Math.random() > 0.5
+            ? 'var(--accent-start)'
+            : 'var(--accent-end)';
+        document.body.appendChild(s);
+        setTimeout(() => s.remove(), 750);
+    }
+}
+
+/* ── Magic: cursor sparkle trail ── */
+let lastTrail = 0;
+document.addEventListener('mousemove', e => {
+    const now = performance.now();
+    if (now - lastTrail < 40) return;
+    lastTrail = now;
+    const s = document.createElement('span');
+    s.className = 'sp-trail';
+    s.style.left = (e.clientX + (Math.random() - 0.5) * 8) + 'px';
+    s.style.top = (e.clientY + (Math.random() - 0.5) * 8) + 'px';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 650);
+});

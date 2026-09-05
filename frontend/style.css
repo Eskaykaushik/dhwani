@@ -385,11 +385,6 @@ body {
 }
 .avatar-svg { width: 30px; height: 30px; display: block; }
 .chat-head h3 { font-size: 14px; font-weight: 600; }
-.chat-head .ch-badge {
-    font-size: 10px; padding: 2px 7px;
-    border-radius: 10px;
-    background: rgba(244, 114, 182, 0.12); color: #f472b6;
-}
 .chat-head .ch-toggle {
     margin-left: auto;
     width: 26px; height: 26px;
@@ -655,4 +650,110 @@ body {
     .upload-area { padding: 40px 24px; }
     .upload-icon-wrap { width: 60px; height: 60px; }
     .upload-icon-wrap .icon { font-size: 26px; }
+}
+
+/* ── Magic: typewriter ── */
+.msg.assistant .msg-bubble.typing-in::after {
+    content: '▍';
+    color: var(--accent-start);
+    font-weight: 400;
+    animation: blink 0.7s steps(2) infinite;
+}
+@keyframes blink { 0%,100%{ opacity:1 } 50%{ opacity:0 } }
+
+.msg-in {
+    animation: msgUp 0.3s ease both;
+}
+@keyframes msgUp {
+    from { opacity:0; transform:translateY(8px) }
+    to   { opacity:1; transform:translateY(0) }
+}
+
+/* ── Magic: avatar reactions ── */
+#ch-avatar {
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+}
+#ch-avatar.thinking {
+    animation: glowPulse 1.2s ease-in-out infinite;
+}
+@keyframes glowPulse {
+    0%,100% { box-shadow: 0 2px 10px rgba(244,114,182,0.3); transform:scale(1) }
+    50%     { box-shadow: 0 4px 22px rgba(244,114,182,0.55); transform:scale(1.08) }
+}
+#ch-avatar.pop {
+    animation: pop 0.4s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes pop {
+    0%   { transform:scale(1) }
+    40%  { transform:scale(1.2) rotate(4deg) }
+    100% { transform:scale(1) rotate(0) }
+}
+
+/* ── Magic: waveform sparkles ── */
+.wf-sparkles {
+    position:absolute; inset:0; pointer-events:none;
+    overflow:hidden; border-radius:var(--radius);
+}
+.wf-sparkles .sp {
+    position:absolute;
+    color: var(--accent-start);
+    font-size: 12px;
+    opacity: 0.5;
+    animation: twinkle 2.4s ease-in-out infinite;
+    pointer-events:none;
+    will-change: transform, opacity;
+}
+.waveform-wrap.playing .wf-sparkles .sp {
+    animation: spFloat 3.5s ease-out forwards, twinkle 2.4s ease-in-out infinite;
+}
+@keyframes twinkle {
+    0%,100% { opacity:0.25; transform:scale(0.7) rotate(0) }
+    50%     { opacity:0.7;  transform:scale(1.1) rotate(18deg) }
+}
+@keyframes spFloat {
+    0%   { transform:translateY(0) rotate(0); opacity:0.7 }
+    100% { transform:translateY(-36px) rotate(25deg); opacity:0 }
+}
+
+/* ── Magic: sparkle burst (Apply) ── */
+.sp-burst {
+    position:fixed; pointer-events:none; z-index:999;
+    width:5px; height:5px; border-radius:50%;
+    background: var(--accent-start);
+    animation: burst 0.7s cubic-bezier(.25,.46,.45,.94) forwards;
+}
+@keyframes burst {
+    0%   { opacity:1; transform:translate(0,0) scale(1) }
+    100% { opacity:0; transform:translate(var(--bx),var(--by)) scale(0) }
+}
+
+/* ── Magic: cursor sparkle trail ── */
+.sp-trail {
+    position:fixed; pointer-events:none; z-index:9999;
+    width:4px; height:4px; border-radius:50%;
+    background:var(--accent-end);
+    opacity:0;
+    animation: trailFade 0.6s ease-out forwards;
+}
+@keyframes trailFade {
+    0%   { opacity:0.8; transform:scale(1) }
+    100% { opacity:0;   transform:scale(0.2) translateY(-6px) }
+}
+
+/* ── Magic: button shimmer ── */
+.btn-primary {
+    position:relative; overflow:hidden;
+}
+.btn-primary::after {
+    content:'';
+    position:absolute; top:0; left:-100%; width:100%; height:100%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition:none;
+}
+.btn-primary:hover::after {
+    animation: shimmer 0.65s ease forwards;
+}
+@keyframes shimmer {
+    0%   { left:-100% }
+    100% { left:100% }
 }
