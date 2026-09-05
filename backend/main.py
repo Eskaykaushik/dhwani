@@ -160,21 +160,25 @@ async def chat(request: ChatRequest):
     history.append({"role": "user", "content": request.message})
 
     result = await asyncio.to_thread(parse_audio_request, request.message, info, history)
-    logger.info("Chat %s: %r -> operation=%s", request.file_id, request.message, (result.get("operation") or {}).get("operation"))
+    op = result.get("operation") if isinstance(result, dict) else None
+    logger.info("Chat %s: %r -> operation=%s", request.file_id, request.message, (op or {}).get("operation") if isinstance(op, dict) else None)
 
     history.append({"role": "assistant", "content": result.get("reply", "")})
     chat_histories[request.file_id] = history[-20:]
 
-    operation = result.get("operation")
-    operations = result.get("operations")
-
-    if operations:
-        operation = operations[0]
-
-    return ChatResponse(
-        reply=result.get("reply", "Done!"),
-        operation=operation,
-    )
+    try:
+        return ChatResponse(
+            file_id=request.file_id,
+            reply=result.get("reply", "Done!"),
+            operation=result.get("operation"),
+        )
+    except Exception:
+        logger.exception("Failed to build chat response for %s", request.file_id)
+        return ChatResponse(
+            file_id=request.file_id,
+            reply=result.get("reply", "Done!"),
+            operation=None,
+        )
 
 
 @app.post("/apply", response_model=ApplyResponse)

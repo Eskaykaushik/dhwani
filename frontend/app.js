@@ -258,13 +258,17 @@ function addMsg(text, role, operation = null) {
     if (role === 'assistant') {
         return new Promise(resolve => {
             typeText(bubble, text, () => {
-                if (operation) appendOperationCard(div, operation);
+                if (operation && usableView(operation)) appendOperationCard(div, operation);
                 resolve();
             });
         });
     }
     bubble.textContent = text;
     return Promise.resolve();
+}
+
+function usableView(op) {
+    return op && typeof op === 'object' && typeof op.operation === 'string';
 }
 
 function typeText(el, text, done) {
@@ -406,7 +410,7 @@ function getOpLabel(op) {
         tempo:   { icon: '⚡', label: 'Tempo', detail: () => `${op.factor||1}x` },
         layer:   { icon: '🎚️', label: 'Layer', detail: () => op.file_id || '' },
     };
-    const info = map[op.operation] || { icon: '🔧', label: op.operation, detail: () => null };
+    const info = map[op.operation] || { icon: '🔧', label: op.operation || 'Edit', detail: () => null };
     return { icon: info.icon, label: info.label, detail: info.detail() };
 }
 

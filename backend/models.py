@@ -17,6 +17,7 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    file_id: str
     reply: str
     operation: dict | None = None
 

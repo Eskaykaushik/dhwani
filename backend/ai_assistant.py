@@ -12,6 +12,11 @@ logger = logging.getLogger("dhwani")
 
 MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
 
+KNOWN_OPS = {
+    "trim", "volume", "fade_in", "fade_out", "normalize",
+    "eq", "compress", "reverb", "delay", "pitch", "tempo", "layer",
+}
+
 _client = None
 
 
@@ -87,27 +92,83 @@ def parse_audio_request(user_message: str, audio_context: dict, history: list | 
             model=MODEL,
             messages=messages,
             temperature=0.7,
-            max_tokens=1200,
+            max_tokens=700,
             response_format={"type": "json_object"}
         )
         content = response.choices[0].message.content
-    except Exception:
+    except Exception as exc:
         logger.exception("Groq API call failed")
-        content = None
+        return api_error_reply(exc, max_tokens)
 
     result = try_parse_json(content)
     if result is not None:
-        return result
+        return normalize_result(result)
 
-    retry = retry_plain_text(messages)
+    retry = retry_plain_text(messages, max_tokens)
     if retry is not None:
-        return retry
+        return normalize_result(retry)
 
     return {
         "reply": "Sorry, I couldn't understand that. Could you rephrase your request?",
         "operation": None,
         "operations": None
     }
+
+
+def api_error_reply(exc: Exception, max_tokens: int | None = None) -> dict:
+    name = type(exc).__name__
+    msg = getattr(exc, "message", "") or str(exc)
+    if "RateLimit" in name or "429" in str(getattr(exc, "status_code", "")) or "output tokens" in msg:
+        return {
+            "reply": "I'm a little busy right now — I hit my processing limit. Please wait a moment and try again.",
+            "operation": None,
+            "operations": None,
+        }
+    return {
+        "reply": "Sorry, I ran into a problem reaching my AI backend. Please try again in a moment.",
+        "operation": None,
+        "operations": None,
+    }
+
+
+def normalize_result(result: dict) -> dict:
+    if not isinstance(result, dict):
+        result = {}
+    if not isinstance(result.get("reply"), str) or not result["reply"].strip():
+        result["reply"] = "Done!"
+
+    operations = result.get("operations")
+
+    coerced = coerce_operation(result.get("operation"))
+    if coerced is None and isinstance(operations, list):
+        for op in operations:
+            coerced = coerce_operation(op)
+            if coerced is not None:
+                break
+
+    result["operation"] = coerced
+    result["operations"] = None
+    return result
+
+
+def coerce_operation(operation) -> dict | None:
+    if isinstance(operation, dict):
+        if isinstance(operation.get("operation"), str):
+            op = dict(operation)
+            op["operation"] = op["operation"].strip()
+            if op["operation"] in KNOWN_OPS:
+                return op
+            return None
+        for key in KNOWN_OPS:
+            if key in operation:
+                params = operation[key]
+                op = dict(params) if isinstance(params, dict) else {}
+                op["operation"] = key
+                return op
+        return None
+    if isinstance(operation, str) and operation.strip() in KNOWN_OPS:
+        return {"operation": operation.strip()}
+    return None
 
 
 def try_parse_json(content):
@@ -126,13 +187,13 @@ def try_parse_json(content):
     return None
 
 
-def retry_plain_text(messages):
+def retry_plain_text(messages, max_tokens=None):
     try:
         response = get_client().chat.completions.create(
             model=MODEL,
             messages=messages,
             temperature=0.7,
-            max_tokens=1200,
+            max_tokens=max_tokens or 700,
         )
         content = response.choices[0].message.content
     except Exception:

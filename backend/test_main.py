@@ -6,6 +6,7 @@ import wave
 import pytest
 from fastapi.testclient import TestClient
 
+import ai_assistant
 import audio_engine
 import main
 
@@ -38,6 +39,42 @@ def make_wav(duration=0.1, sample_rate=4000, channels=1) -> bytes:
 
 
 SKIP_AUDIO_DURATION = 1.0
+
+
+def test_chat_route_never_500s_on_bad_operation_shape(client, monkeypatch):
+    up = client.post("/upload", files={"file": ("t.wav", make_wav(SKIP_AUDIO_DURATION), "audio/wav")})
+    file_id = up.json()["file_id"]
+
+    def fake_parse(message, ctx, history):
+        return {"reply": "doin it", "operation": "volume", "operations": None}
+
+    monkeypatch.setattr(main, "parse_audio_request", fake_parse)
+    resp = client.post("/chat", json={"file_id": file_id, "message": "make it louder"})
+    assert resp.status_code == 200
+    assert resp.json()["operation"] is None
+
+
+def test_coerce_operation_normalizes_shapes():
+    assert ai_assistant.coerce_operation("volume") == {"operation": "volume"}
+    assert ai_assistant.coerce_operation({"operation": "volume", "gain": 6}) == {"operation": "volume", "gain": 6}
+    assert ai_assistant.coerce_operation({"volume": {"gain": 6}}) == {"operation": "volume", "gain": 6}
+    assert ai_assistant.coerce_operation("bogus") is None
+    assert ai_assistant.coerce_operation({"operation": "bogus"}) is None
+    assert ai_assistant.coerce_operation(123) is None
+
+
+def test_normalize_result_picks_operations_first():
+    result = ai_assistant.normalize_result(
+        {"reply": "ok", "operation": "bogus", "operations": [{"operation": "trim", "start": 0, "end": 10}]}
+    )
+    assert result["operation"] == {"operation": "trim", "start": 0, "end": 10}
+    assert result["operations"] is None
+
+
+def test_normalize_result_defaults_reply():
+    result = ai_assistant.normalize_result({"operation": "volume"})
+    assert result["reply"] == "Done!"
+    assert result["operation"] == {"operation": "volume"}
 
 
 def test_health(client):
