@@ -125,6 +125,163 @@ function uploadFailed(wrap, bar, text, label) {
     showToast('Upload failed', 'error');
 }
 
+/* ── Record ── */
+const RECORD_MAX_MS = 120 * 1000;
+let recordStream = null;
+let recordRecorder = null;
+let recordChunks = [];
+let recordTimer = null;
+let recordStart = 0;
+
+function pickRecorderMime() {
+    if (typeof MediaRecorder === 'undefined') return null;
+    const preferred = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    for (const m of preferred) {
+        if (MediaRecorder.isTypeSupported(m)) return m;
+    }
+    return '';
+}
+
+function fmtRec(ms) {
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+async function startRecording() {
+    const dropZone = document.getElementById('drop-zone');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+        showToast('Recording is not supported in this browser', 'error');
+        return;
+    }
+    let stream;
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+        showToast('Microphone unavailable or permission denied', 'error');
+        return;
+    }
+
+    recordStream = stream;
+    recordChunks = [];
+    recordStart = Date.now();
+
+    const mimeType = pickRecorderMime();
+    recordRecorder = mimeType === null
+        ? null
+        : new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    if (!recordRecorder) {
+        stream.getTracks().forEach(t => t.stop());
+        recordStream = null;
+        showToast('Recording is not supported in this browser', 'error');
+        return;
+    }
+    recordRecorder.ondataavailable = e => { if (e.data && e.data.size) recordChunks.push(e.data); };
+    recordRecorder.onstop = onRecordingStopped;
+    recordRecorder.start();
+
+    dropZone.classList.add('recording');
+    document.getElementById('rec-time').textContent = '0:00';
+    recordTimer = setInterval(() => {
+        const elapsed = Math.max(0, Date.now() - recordStart);
+        document.getElementById('rec-time').textContent = fmtRec(elapsed);
+        if (elapsed >= RECORD_MAX_MS) stopRecording();
+    }, 250);
+    showToast('Recording… tap Stop when done');
+}
+
+function stopRecording() {
+    if (!recordRecorder || recordRecorder.state === 'inactive') return;
+    recordRecorder.stop();
+}
+
+function cancelRecording() {
+    clearInterval(recordTimer);
+    recordTimer = null;
+    if (recordStream) {
+        recordStream.getTracks().forEach(t => t.stop());
+        recordStream = null;
+    }
+    recordRecorder = null;
+    recordChunks = [];
+    document.getElementById('drop-zone').classList.remove('recording');
+    document.getElementById('rec-time').textContent = '0:00';
+}
+
+async function onRecordingStopped() {
+    document.getElementById('drop-zone').classList.remove('recording');
+    clearInterval(recordTimer);
+    recordTimer = null;
+    if (recordStream) {
+        recordStream.getTracks().forEach(t => t.stop());
+        recordStream = null;
+    }
+    const mimeType = recordRecorder ? recordRecorder.mimeType : '';
+    recordRecorder = null;
+    if (!recordChunks.length) {
+        showToast('No audio captured', 'error');
+        return;
+    }
+    const blob = new Blob(recordChunks, { type: mimeType || 'audio/webm' });
+    recordChunks = [];
+    try {
+        const wav = await mediaToWav(blob);
+        if (!wav) {
+            showToast('Could not process recording', 'error');
+            return;
+        }
+        uploadFile(new File([wav], 'recording.wav', { type: 'audio/wav' }));
+    } catch {
+        showToast('Could not process recording', 'error');
+    }
+}
+
+async function mediaToWav(blob) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    const ctx = new AudioCtx();
+    try {
+        const decoded = await ctx.decodeAudioData(await blob.arrayBuffer());
+        const channels = Math.min(2, decoded.numberOfChannels);
+        const sr = decoded.sampleRate;
+        const frames = decoded.length;
+        const pcm = new Int16Array(frames * channels);
+        for (let c = 0; c < channels; c++) {
+            const data = decoded.getChannelData(c);
+            for (let i = 0; i < frames; i++) {
+                const s = Math.max(-1, Math.min(1, data[i]));
+                pcm[i * channels + c] = s < 0 ? Math.round(s * 0x8000) : Math.round(s * 0x7fff);
+            }
+        }
+        return encodeWav(pcm, sr, channels);
+    } finally {
+        ctx.close();
+    }
+}
+
+function encodeWav(pcm, sampleRate, channels) {
+    const bytesPerSample = 2;
+    const blockAlign = channels * bytesPerSample;
+    const dataLen = pcm.length * bytesPerSample;
+    const buf = new ArrayBuffer(44 + dataLen);
+    const dv = new DataView(buf);
+    const str = (off, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(off + i, s.charCodeAt(i)); };
+    str(0, 'RIFF');
+    dv.setUint32(4, 36 + dataLen, true);
+    str(8, 'WAVE');
+    str(12, 'fmt ');
+    dv.setUint32(16, 16, true);
+    dv.setUint16(20, 1, true);
+    dv.setUint16(22, channels, true);
+    dv.setUint32(24, sampleRate, true);
+    dv.setUint32(28, sampleRate * blockAlign, true);
+    dv.setUint16(32, blockAlign, true);
+    dv.setUint16(34, 16, true);
+    str(36, 'data');
+    dv.setUint32(40, dataLen, true);
+    new Uint8Array(buf).set(new Uint8Array(pcm.buffer), 44);
+    return new Blob([buf], { type: 'audio/wav' });
+}
+
 /* ── Waveform ── */
 function initWaveform() {
     const loading = document.getElementById('waveform-loading');

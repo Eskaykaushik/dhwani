@@ -198,6 +198,51 @@ body:not(.app-editor) .site-footer p + p { display: inline; }
 .upload-area p { color: var(--text-muted); font-size: 12.5px; margin-bottom: 22px; }
 .upload-area .btn-primary { min-width: 150px; padding: 10px 24px; font-size: 12.5px; }
 
+.btn-ghost {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+.btn-ghost:hover { border-color: var(--accent-start); color: var(--accent-start); transform: translateY(-1px); }
+
+.upload-or {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px auto 14px; max-width: 220px;
+    color: var(--text-muted); font-size: 10px;
+    letter-spacing: 2.5px; text-transform: uppercase;
+}
+.upload-or::before, .upload-or::after {
+    content: ''; height: 1px; flex: 1; background: var(--border);
+}
+
+#record-panel { display: none; flex-direction: column; align-items: center; }
+.upload-area.recording #upload-idle { display: none; }
+.upload-area.recording #record-panel { display: flex; }
+
+.rec-mic {
+    width: 56px; height: 56px; margin: 0 auto 14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(20,184,166,0.10));
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+}
+.rec-mic .icon { font-size: 24px; }
+.rec-dot {
+    position: absolute; top: -2px; right: 2px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--error);
+    animation: recPulse 1.2s ease-in-out infinite;
+}
+@keyframes recPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.rec-time {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 15px; color: var(--text-primary);
+}
+.upload-area .rec-hint { margin: 4px 0 14px; }
+.rec-controls { display: flex; gap: 10px; }
+.rec-stop.btn-primary { background: var(--error); box-shadow: none; }
+.rec-stop.btn-primary::after { display: none; }
+
 .upload-area #upload-idle { transition: opacity 0.25s ease; }
 .upload-area.uploading #upload-idle { opacity: 0; pointer-events: none; }
 
@@ -937,6 +982,7 @@ button, .btn, .p-btn, .q-btn, .v-item, .v-dl, .fi-versions,
     .q-btn:hover { border-color: var(--border); color: var(--text-secondary); }
     .btn-primary:hover { opacity: 1; transform: none; }
     .btn-primary:hover::after { animation: none; }
+    .btn-ghost:hover { border-color: var(--border); color: var(--text-secondary); transform: none; }
     .apply-btn:hover { opacity: 1; transform: none; }
     .op-raw:hover { color: var(--text-muted); }
     .v-item:hover { background: transparent; }

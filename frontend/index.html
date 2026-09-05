@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Dhwani — AI Music Editor</title>
-    <link rel="stylesheet" href="style.css?v=19">
+    <link rel="stylesheet" href="style.css?v=20">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -35,6 +35,20 @@
                     <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
                         Choose File
                     </button>
+                    <div class="upload-or"><span>or</span></div>
+                    <button class="btn btn-ghost" onclick="startRecording()">&#127908;&nbsp;Record audio</button>
+                </div>
+                <div id="record-panel">
+                    <div class="rec-mic">
+                        <span class="rec-dot"></span>
+                        <span class="icon">&#127908;</span>
+                    </div>
+                    <div class="rec-time" id="rec-time">0:00</div>
+                    <p class="rec-hint">Recording&hellip;</p>
+                    <div class="rec-controls">
+                        <button class="btn btn-ghost" id="rec-cancel" onclick="cancelRecording()">Cancel</button>
+                        <button class="btn btn-primary rec-stop" id="rec-stop" onclick="stopRecording()">Stop</button>
+                    </div>
                 </div>
                 <div class="upload-progress" id="upload-progress">
                     <div class="up-filename" id="upload-filename"></div>
@@ -187,6 +201,6 @@
     <div id="toast" class="toast"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7.12.6/dist/wavesurfer.min.js"></script>
-    <script src="app.js?v=13"></script>
+    <script src="app.js?v=14"></script>
 </body>
 </html>
