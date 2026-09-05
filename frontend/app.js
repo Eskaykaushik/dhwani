@@ -78,6 +78,7 @@ function uploadFile(file) {
             progressWrap.classList.remove('active', 'done');
             uploadScreen.classList.remove('active');
             editorScreen.classList.add('active');
+            document.body.classList.add('app-editor');
 
             initWaveform();
             loadVersions();
@@ -206,7 +207,11 @@ function seekBackwardN(s) { if (wavesurfer) wavesurfer.setTime(Math.max(0, waves
 async function sendMessage(e) {
     if (e) e.preventDefault();
     const msg = chatInput.value.trim();
-    if (!msg || !currentFileId) return;
+    if (!msg) return;
+    if (!currentFileId) {
+        showToast('Upload a file first', 'error');
+        return;
+    }
     chatInput.value = '';
     addMsg(msg, 'user');
     const typing = addTyping();
@@ -446,6 +451,7 @@ chatMessages.addEventListener('scroll', () => {
 
 /* ── Mobile Chat Toggle ── */
 function toggleChat() {
+    if (!chatPanel || !chatFab) return;
     chatPanel.classList.toggle('open');
     chatFab.classList.toggle('active');
 }

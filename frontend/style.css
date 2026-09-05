@@ -208,7 +208,7 @@ body {
 @keyframes checkStroke { to { stroke-dashoffset: 0; } }
 
 /* ── Editor ── */
-.editor-layout { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+.editor-layout { display: flex; flex: 1; min-height: 0; overflow: hidden; padding-right: 380px; }
 
 .audio-panel {
     flex: 1; display: flex; flex-direction: column;
@@ -365,11 +365,17 @@ body {
 
 /* ── Chat Panel ── */
 .chat-panel {
+    position: fixed;
+    top: 61px; right: 0; bottom: 0;
     width: 380px;
-    display: flex; flex-direction: column;
+    display: none;
+    flex-direction: column;
     background: var(--bg-surface);
     min-height: 0;
+    z-index: 300;
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
 }
+body.app-editor .chat-panel { display: flex; }
 .chat-head {
     display: flex; align-items: center; gap: 10px;
     padding: 14px 18px;
@@ -607,7 +613,7 @@ body {
 @media (max-width: 800px) {
     .tagline { display: none; }
 
-    .editor-layout { flex-direction: column; }
+    .editor-layout { flex-direction: column; padding-right: 0; }
 
     .audio-panel {
         border-right: none;
@@ -617,7 +623,8 @@ body {
     .audio-panel::after { display: none; }
 
     .chat-panel {
-        position: fixed; bottom: 0; left: 0; right: 0;
+        display: flex;
+        position: fixed; top: auto; bottom: 0; left: 0; right: 0;
         width: 100%; max-height: 60vh;
         border-radius: var(--radius) var(--radius) 0 0;
         border: 1px solid var(--border);

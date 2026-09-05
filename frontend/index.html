@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dhwani — AI Music Editor</title>
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -104,59 +104,59 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <!-- Chat Panel -->
-                <div class="chat-panel" id="chat-panel">
-                    <div class="chat-head">
-                        <div class="ch-icon" id="ch-avatar" title="Dhwani">
-                            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="avatar-svg">
-                                <circle cx="32" cy="38" r="16" fill="#FFD9E8"/>
-                                <path d="M16 30c-6 2-9 8-7 13" stroke="#8C5A2C" stroke-width="4" stroke-linecap="round" fill="none"/>
-                                <path d="M48 30c6 2 9 8 7 13" stroke="#8C5A2C" stroke-width="4" stroke-linecap="round" fill="none"/>
-                                <path d="M16 26q8-8 16-8t16 8l-2 3-14 4-14-4z" fill="#7C3AED"/>
-                                <circle cx="26" cy="38" r="2.4" fill="#3B1D0F"/>
-                                <circle cx="38" cy="38" r="2.4" fill="#3B1D0F"/>
-                                <circle cx="26.9" cy="38.9" r="1" fill="#fff" opacity="0.9"/>
-                                <circle cx="38.9" cy="38.9" r="1" fill="#fff" opacity="0.9"/>
-                                <path d="M28 45q4 4 8 0" stroke="#E85D8A" stroke-width="2.6" stroke-linecap="round" fill="none"/>
-                                <circle cx="43" cy="33" r="3" fill="#FF6B9D" opacity="0.7"/>
-                                <circle cx="45" cy="35" r="2" fill="#FF6B9D" opacity="0.5"/>
-                            </svg>
-                        </div>
-                        <h3>Dhwani</h3>
-                        <button class="ch-toggle" id="chat-toggle" onclick="toggleChatPanel()" title="Collapse / Expand">
-                            <span id="chat-chevron">&#9662;</span>
-                        </button>
-                    </div>
-                    <div class="chat-messages" id="chat-messages">
-                        <div class="msg assistant">
-                            <div class="msg-bubble">
-                                Hi! I'm Dhwani. Tell me how you'd like to change your track, like
-                                <em>"make it louder"</em> or <em>"add reverb"</em>. 🎶
-                            </div>
-                        </div>
-                        <div class="chat-to-bottom" id="chat-to-bottom" onclick="scrollChatToBottom()">
-                            <span>&#9660;</span> New messages
-                        </div>
-                    </div>
-                    <div class="chat-input-area">
-                        <div class="quick-row">
-                            <button class="q-btn" onclick="sendQuick('Make it louder')">Louder</button>
-                            <button class="q-btn" onclick="sendQuick('Add reverb')">Reverb</button>
-                            <button class="q-btn" onclick="sendQuick('Add bass boost')">Bass</button>
-                            <button class="q-btn" onclick="sendQuick('Normalize')">Normalize</button>
-                            <button class="q-btn" onclick="sendQuick('Add compression')">Compress</button>
-                            <button class="q-btn" onclick="sendQuick('Trim the first 10 seconds')">Trim 10s</button>
-                        </div>
-                        <form onsubmit="sendMessage(event)">
-                            <input type="text" id="chat-input"
-                                   placeholder="Describe the edit..."
-                                   autocomplete="off">
-                            <button type="submit" class="btn btn-primary">Send</button>
-                        </form>
-                    </div>
+    <!-- Chat Panel -->
+    <div class="chat-panel" id="chat-panel">
+        <div class="chat-head">
+            <div class="ch-icon" id="ch-avatar" title="Dhwani">
+                <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="avatar-svg">
+                    <circle cx="32" cy="38" r="16" fill="#FFD9E8"/>
+                    <path d="M16 30c-6 2-9 8-7 13" stroke="#8C5A2C" stroke-width="4" stroke-linecap="round" fill="none"/>
+                    <path d="M48 30c6 2 9 8 7 13" stroke="#8C5A2C" stroke-width="4" stroke-linecap="round" fill="none"/>
+                    <path d="M16 26q8-8 16-8t16 8l-2 3-14 4-14-4z" fill="#7C3AED"/>
+                    <circle cx="26" cy="38" r="2.4" fill="#3B1D0F"/>
+                    <circle cx="38" cy="38" r="2.4" fill="#3B1D0F"/>
+                    <circle cx="26.9" cy="38.9" r="1" fill="#fff" opacity="0.9"/>
+                    <circle cx="38.9" cy="38.9" r="1" fill="#fff" opacity="0.9"/>
+                    <path d="M28 45q4 4 8 0" stroke="#E85D8A" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+                    <circle cx="43" cy="33" r="3" fill="#FF6B9D" opacity="0.7"/>
+                    <circle cx="45" cy="35" r="2" fill="#FF6B9D" opacity="0.5"/>
+                </svg>
+            </div>
+            <h3>Dhwani</h3>
+            <button class="ch-toggle" id="chat-toggle" onclick="toggleChatPanel()" title="Collapse / Expand">
+                <span id="chat-chevron">&#9662;</span>
+            </button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="msg assistant">
+                <div class="msg-bubble">
+                    Hi! I'm Dhwani. Tell me how you'd like to change your track, like
+                    <em>"make it louder"</em> or <em>"add reverb"</em>. 🎶
                 </div>
             </div>
+            <div class="chat-to-bottom" id="chat-to-bottom" onclick="scrollChatToBottom()">
+                <span>&#9660;</span> New messages
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <div class="quick-row">
+                <button class="q-btn" onclick="sendQuick('Make it louder')">Louder</button>
+                <button class="q-btn" onclick="sendQuick('Add reverb')">Reverb</button>
+                <button class="q-btn" onclick="sendQuick('Add bass boost')">Bass</button>
+                <button class="q-btn" onclick="sendQuick('Normalize')">Normalize</button>
+                <button class="q-btn" onclick="sendQuick('Add compression')">Compress</button>
+                <button class="q-btn" onclick="sendQuick('Trim the first 10 seconds')">Trim 10s</button>
+            </div>
+            <form onsubmit="sendMessage(event)">
+                <input type="text" id="chat-input"
+                       placeholder="Describe the edit..."
+                       autocomplete="off">
+                <button type="submit" class="btn btn-primary">Send</button>
+            </form>
         </div>
     </div>
 
@@ -169,6 +169,6 @@
     <div id="toast" class="toast"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7.12.6/dist/wavesurfer.min.js"></script>
-    <script src="app.js?v=8"></script>
+    <script src="app.js?v=9"></script>
 </body>
 </html>
