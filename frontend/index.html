@@ -76,11 +76,17 @@
                     </div>
 
                     <div class="versions-panel">
-                        <h3>Version History</h3>
-                        <div id="versions-list" class="versions-list">
-                            <div class="v-item active">
-                                <span class="v-dot"></span>
-                                <span class="v-label">Original</span>
+                        <div class="versions-head" id="versions-head" onclick="toggleVersions()">
+                            <h3>Version History</h3>
+                            <span class="versions-active" id="versions-active">Original</span>
+                            <span class="versions-chevron" id="versions-chevron">&#9660;</span>
+                        </div>
+                        <div class="versions-body" id="versions-body">
+                            <div id="versions-list" class="versions-list">
+                                <div class="v-item active">
+                                    <span class="v-dot"></span>
+                                    <span class="v-label">Original</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -92,6 +98,9 @@
                         <div class="ch-icon">&#129302;</div>
                         <h3>AI Assistant</h3>
                         <span class="ch-badge">GPT</span>
+                        <button class="ch-toggle" id="chat-toggle" onclick="toggleChatPanel()" title="Collapse / Expand">
+                            <span id="chat-chevron">&#9662;</span>
+                        </button>
                     </div>
                     <div class="chat-messages" id="chat-messages">
                         <div class="msg assistant">
@@ -99,6 +108,9 @@
                                 Hi! Tell me what you'd like to change about your track. Try something like
                                 <em>"make it louder"</em> or <em>"add reverb"</em>.
                             </div>
+                        </div>
+                        <div class="chat-to-bottom" id="chat-to-bottom" onclick="scrollChatToBottom()">
+                            <span>&#9660;</span> New messages
                         </div>
                     </div>
                     <div class="chat-input-area">

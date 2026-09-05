@@ -1,24 +1,29 @@
-import os
-import uuid
 import json
-import numpy as np
-import librosa
-import soundfile as sf
+import os
+import tempfile
+import threading
 from pathlib import Path
+
+import librosa
+import numpy as np
+import soundfile as sf
 from pedalboard import (
-    Pedalboard,
-    Reverb,
     Compressor,
+    Delay,
     Gain,
     HighpassFilter,
     LowpassFilter,
+    Pedalboard,
+    PitchShift,
+    Reverb,
 )
-from pedalboard import Delay, PitchShift
 
 BASE_DIR = Path(__file__).parent.parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 OUTPUT_DIR = BASE_DIR / "output"
 VERSIONS_FILE = BASE_DIR / "versions.json"
+
+_versions_lock = threading.Lock()
 
 
 def ensure_dirs():
@@ -46,7 +51,7 @@ def get_audio_info(filepath: str) -> dict:
 
 
 def generate_waveform(filepath: str, points: int = 500) -> list:
-    y, sr = librosa.load(filepath, sr=None, mono=True)
+    y, _ = librosa.load(filepath, sr=None, mono=True)
     hop_length = len(y) // points
     waveform = []
     for i in range(0, len(y), hop_length):
@@ -64,7 +69,7 @@ def get_current_file(file_id: str) -> str:
     return get_original_file(file_id)
 
 
-def get_specific_file(file_id: str, version: int = None) -> str:
+def get_specific_file(file_id: str, version: int | None = None) -> str:
     if version is None:
         return get_current_file(file_id)
     versions = load_versions(file_id)
@@ -80,38 +85,54 @@ def get_original_file(file_id: str) -> str:
 
 
 def load_versions(file_id: str) -> dict:
-    if VERSIONS_FILE.exists():
-        all_versions = json.loads(VERSIONS_FILE.read_text())
-        return all_versions.get(file_id, {})
+    with _versions_lock:
+        if VERSIONS_FILE.exists():
+            all_versions = json.loads(VERSIONS_FILE.read_text())
+            return all_versions.get(file_id, {})
     return {}
 
 
-def save_version(file_id: str, version: int, filepath: str, operation: str):
-    if VERSIONS_FILE.exists():
-        all_versions = json.loads(VERSIONS_FILE.read_text())
-    else:
-        all_versions = {}
+def add_version(file_id: str, operation: str) -> tuple:
+    with _versions_lock:
+        if VERSIONS_FILE.exists():
+            all_versions = json.loads(VERSIONS_FILE.read_text())
+        else:
+            all_versions = {}
 
-    if file_id not in all_versions:
-        all_versions[file_id] = {}
+        file_versions = all_versions.get(file_id, {})
+        current_version = max(
+            [v.get("version", 0) for v in file_versions.values()], default=0
+        )
+        new_version = current_version + 1
+        output_path = OUTPUT_DIR / f"{file_id}_v{new_version}.wav"
 
-    all_versions[file_id][str(version)] = {
-        "version": version,
-        "path": filepath,
-        "operation": operation
-    }
+        if file_id not in all_versions:
+            all_versions[file_id] = {}
 
-    VERSIONS_FILE.write_text(json.dumps(all_versions, indent=2))
+        all_versions[file_id][str(new_version)] = {
+            "version": new_version,
+            "path": str(output_path),
+            "operation": operation
+        }
+
+        fd, tmp_path = tempfile.mkstemp(
+            dir=str(VERSIONS_FILE.parent), suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(all_versions, f, indent=2)
+            os.replace(tmp_path, VERSIONS_FILE)
+        except Exception:
+            os.unlink(tmp_path)
+            raise
+
+        return new_version, output_path
 
 
 def apply_operation(file_id: str, operation: dict) -> tuple:
     current = get_current_file(file_id)
     if not current:
         raise ValueError("File not found")
-
-    versions = load_versions(file_id)
-    current_version = max([v["version"] for v in versions.values()], default=0)
-    new_version = current_version + 1
 
     y, sr = librosa.load(current, sr=None, mono=False)
 
@@ -213,9 +234,6 @@ def apply_operation(file_id: str, operation: dict) -> tuple:
     else:
         raise ValueError(f"Unknown operation: {op_type}")
 
-    output_path = OUTPUT_DIR / f"{file_id}_v{new_version}.wav"
-    sf.write(str(output_path), y.T if y.shape[0] > 1 else y.flatten(), sr)
-
     op_name = op_type
     if op_type == "eq":
         op_name = f"eq ({operation.get('frequency', 1000)}Hz, {operation.get('gain', 0)}dB)"
@@ -230,6 +248,22 @@ def apply_operation(file_id: str, operation: dict) -> tuple:
     elif op_type == "pitch":
         op_name = f"pitch ({operation.get('semitones', 0)} semitones)"
 
-    save_version(file_id, new_version, str(output_path), op_name)
+    fd, tmp_path = tempfile.mkstemp(dir=str(OUTPUT_DIR), suffix=".wav")
+    os.close(fd)
+    try:
+        sf.write(str(tmp_path), y.T if y.shape[0] > 1 else y.flatten(), sr)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
 
-    return new_version, str(output_path)
+    new_version, output_path = add_version(file_id, op_name)
+
+    try:
+        os.replace(tmp_path, output_path)
+        return new_version, str(output_path)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise

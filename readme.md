@@ -147,7 +147,7 @@ dhwani/
   1. **New → Blueprint** and connect the repository.
   2. Render reads `render.yaml` and provisions the service on the **Free** plan.
   3. Add the secret **`GROQ_API_KEY`** (and optionally `ALLOWED_ORIGINS`).
-  4. Deploy. The service runs on `https://dhwani-api.onrender.com` (or your chosen name).
+  4. Deploy. The service runs on `https://dhwani-bv20.onrender.com` (or your chosen name).
 
 ### 3. Environment variables
 
@@ -155,11 +155,28 @@ dhwani/
 |----------|---------|----------|
 | `GROQ_API_KEY` | Key for the Groq LLM provider | Yes |
 | `GROQ_MODEL` | Model name (default `qwen/qwen3.6-27b`) | No |
-| `ALLOWED_ORIGINS` | CORS allowlist as JSON array | No (default `*`) |
+| `ALLOWED_ORIGINS` | CORS allowlist as JSON array or comma-separated (default localhost; never `*` in production) | No |
+| `MAX_UPLOAD_SIZE` | Max upload size in bytes (default 50 MB) | No |
+| `HOST` / `PORT` | Bind address / port for `python main.py` (default `127.0.0.1:8000`) | No |
 
 ### 4. Single-session behavior
 
 Uploads and edits are stored on Render's ephemeral disk. On every restart/redeploy the disk is wiped, so the session resets cleanly — no stale data, no cleanup needed.
+
+## 🧪 Tests & Linting
+
+```bash
+# Run the test suite (from repo root)
+python -m pytest backend/test_main.py -q
+
+# Lint
+cd backend && python -m ruff check .
+
+# Health check
+curl http://localhost:8000/health   # -> {"status": "ok"}
+```
+
+CI runs both on every push/PR via `.github/workflows/ci.yml`.
 
 ## 🎯 Goal
 

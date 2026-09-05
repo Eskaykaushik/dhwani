@@ -1,0 +1,14 @@
+line-length = 100
+target-version = "py310"
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "S", "PERF", "RUF", "ASYNC"]
+ignore = [
+    "B008",   # FastAPI File()/Depends() in defaults is idiomatic
+    "ASYNC230",  # chunked upload writes are negligible blocking IO
+    "BLE001",  # intentional fallback parsing in try_parse_json
+    "E501",  # long JSON examples in the LLM prompt are intentional
+]
+
+[lint.per-file-ignores]
+"test_*.py" = ["PERF401", "S101"]

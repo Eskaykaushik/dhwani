@@ -1,6 +1,6 @@
 const API = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
     ? `${location.protocol}//${location.hostname}:8000`
-    : 'https://dhwani-api.onrender.com';
+    : 'https://dhwani-bv20.onrender.com';
 
 let wavesurfer = null;
 let currentFileId = null;
@@ -17,6 +17,7 @@ const chatInput = document.getElementById('chat-input');
 const toast = document.getElementById('toast');
 const chatPanel = document.getElementById('chat-panel');
 const chatFab = document.getElementById('chat-fab');
+const chatToBottom = document.getElementById('chat-to-bottom');
 
 /* ── Upload ── */
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
@@ -194,7 +195,7 @@ function addMsg(text, role, operation = null) {
 
     div.innerHTML = html;
     chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    scrollChatToBottom();
 }
 
 function addTyping() {
@@ -202,7 +203,7 @@ function addTyping() {
     div.className = 'msg assistant';
     div.innerHTML = `<div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
     chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    scrollChatToBottom();
     return div;
 }
 
@@ -251,9 +252,23 @@ async function loadVersions() {
             item.onclick = () => { loadVer(v.version, item); };
             list.appendChild(item);
         });
+
+        if (data.versions.length) {
+            const last = data.versions[data.versions.length - 1];
+            setVersionsActive(`v${last.version}: ${last.operation}`);
+        }
     } catch (err) {
         console.error('Failed to load versions');
     }
+}
+
+function setVersionsActive(label) {
+    const el = document.getElementById('versions-active');
+    if (el) el.textContent = label;
+}
+
+function toggleVersions() {
+    document.querySelector('.versions-panel').classList.toggle('open');
 }
 
 function loadVer(version, el) {
@@ -263,6 +278,8 @@ function loadVer(version, el) {
     }
     document.querySelectorAll('.v-item').forEach(i => i.classList.remove('active'));
     if (el) el.classList.add('active');
+    const label = el ? el.querySelector('.v-label').textContent : 'Original';
+    setVersionsActive(label.trim());
 }
 
 /* ── Operation Labels ── */
@@ -285,6 +302,21 @@ function getOpLabel(op) {
     return { icon: info.icon, label: info.label, detail: info.detail() };
 }
 
+/* ── Chat Scroll-to-Bottom Badge ── */
+function scrollChatToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatToBottom.classList.remove('visible');
+}
+
+chatMessages.addEventListener('scroll', () => {
+    const distFromBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight;
+    if (distFromBottom > 80) {
+        chatToBottom.classList.add('visible');
+    } else {
+        chatToBottom.classList.remove('visible');
+    }
+}, { passive: true });
+
 /* ── Mobile Chat Toggle ── */
 function toggleChat() {
     chatPanel.classList.toggle('open');
@@ -292,6 +324,17 @@ function toggleChat() {
     chatFab.innerHTML = chatPanel.classList.contains('open')
         ? '&#10005;'
         : '&#128172;<span class="fab-badge" id="fab-badge"></span>';
+}
+
+/* ── Chat Collapse ── */
+function toggleChatPanel() {
+    chatPanel.classList.toggle('collapsed');
+    const chevron = document.getElementById('chat-chevron');
+    const toggle = document.getElementById('chat-toggle');
+    const collapsed = chatPanel.classList.contains('collapsed');
+    chevron.innerHTML = collapsed ? '&#9652;' : '&#9662;';
+    toggle.title = collapsed ? 'Expand' : 'Collapse';
+    if (!collapsed) chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 /* ── Utils ── */

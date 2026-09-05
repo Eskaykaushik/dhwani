@@ -1,9 +1,14 @@
-import os
 import json
-from groq import Groq
+import logging
+import os
+import re
+
 from dotenv import load_dotenv
+from groq import Groq
 
 load_dotenv()
+
+logger = logging.getLogger("dhwani")
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
@@ -48,7 +53,7 @@ Current audio context:
 """
 
 
-def parse_audio_request(user_message: str, audio_context: dict, history: list = None) -> dict:
+def parse_audio_request(user_message: str, audio_context: dict, history: list | None = None) -> dict:
     duration = audio_context.get("duration", 0)
     sample_rate = audio_context.get("sample_rate", 44100)
     channels = audio_context.get("channels", 2)
@@ -65,8 +70,7 @@ def parse_audio_request(user_message: str, audio_context: dict, history: list = 
     messages = [{"role": "system", "content": system_prompt}]
 
     if history:
-        for msg in history[-10:]:
-            messages.append(msg)
+        messages.extend(history[-10:])
 
     messages.append({"role": "user", "content": user_message})
 
@@ -78,14 +82,63 @@ def parse_audio_request(user_message: str, audio_context: dict, history: list = 
             max_tokens=1200,
             response_format={"type": "json_object"}
         )
+        content = response.choices[0].message.content
+    except Exception:
+        logger.exception("Groq API call failed")
+        content = None
 
-        result = json.loads(response.choices[0].message.content)
-        if isinstance(result.get("operation"), dict) and "operation" in result["operation"]:
-            pass
+    result = try_parse_json(content)
+    if result is not None:
         return result
-    except Exception as e:
+
+    retry = retry_plain_text(messages)
+    if retry is not None:
+        return retry
+
+    return {
+        "reply": "Sorry, I couldn't understand that. Could you rephrase your request?",
+        "operation": None,
+        "operations": None
+    }
+
+
+def try_parse_json(content):
+    if not content:
+        return None
+    try:
+        return json.loads(content)
+    except Exception:
+        logger.debug("Model output was not valid JSON: %r", content or "")
+    match = re.search(r'\{[^{}]*\}', content, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except Exception:
+            logger.debug("Extracted JSON fragment did not parse")
+    return None
+
+
+def retry_plain_text(messages):
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=1200,
+        )
+        content = response.choices[0].message.content
+    except Exception:
+        logger.exception("Groq retry failed")
+        return None
+
+    result = try_parse_json(content)
+    if result is not None:
+        return result
+
+    if content:
         return {
-            "reply": f"Sorry, I encountered an error: {str(e)}",
+            "reply": content,
             "operation": None,
             "operations": None
         }
+    return None
