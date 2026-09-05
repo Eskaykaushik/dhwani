@@ -619,6 +619,7 @@ body.chat-open .editor-layout { padding-right: 380px; }
     align-items: center; justify-content: center;
 }
 .chat-fab.has-unread .fab-badge { display: flex; }
+.chat-panel.open ~ .chat-fab { display: none; }
 
 @media (min-width: 801px) {
     .chat-head .ch-toggle { display: none; }
