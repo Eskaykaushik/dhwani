@@ -18,6 +18,7 @@ const toast = document.getElementById('toast');
 const chatPanel = document.getElementById('chat-panel');
 const chatFab = document.getElementById('chat-fab');
 const chatToBottom = document.getElementById('chat-to-bottom');
+const fabBadge = document.getElementById('fab-badge');
 
 /* ── Upload ── */
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
@@ -83,6 +84,7 @@ function uploadFile(file) {
             initWaveform();
             loadVersions();
             showToast('File loaded', 'success');
+            if (window.innerWidth > 800) openChat();
         }, 900);
     };
     xhr.onerror = () => {
@@ -232,7 +234,7 @@ async function sendMessage(e) {
         if (data.operation && window.innerWidth <= 800) {
             setTimeout(async () => {
                 const ok = await applyOp(null, data.operation);
-                if (ok) toggleChat();
+                if (ok) closeChat();
             }, 1000);
         }
     } catch {
@@ -268,6 +270,7 @@ function addMsg(text, role, operation = null) {
     scrollChatToBottom();
 
     if (role === 'assistant') {
+        if (!chatPanel.classList.contains('open')) bumpUnread();
         return new Promise(resolve => {
             typeText(bubble, text, () => {
                 if (operation && usableView(operation)) appendOperationCard(div, operation);
@@ -449,11 +452,41 @@ chatMessages.addEventListener('scroll', () => {
     }
 }, { passive: true });
 
-/* ── Mobile Chat Toggle ── */
+/* ── Chat Open / Close ── */
+function openChat() {
+    if (!chatPanel || !chatFab) return;
+    chatPanel.classList.add('open');
+    chatFab.classList.add('active');
+    document.body.classList.add('chat-open');
+    clearUnread();
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function closeChat() {
+    if (!chatPanel || !chatFab) return;
+    chatPanel.classList.remove('open');
+    chatFab.classList.remove('active');
+    document.body.classList.remove('chat-open');
+}
+
 function toggleChat() {
     if (!chatPanel || !chatFab) return;
-    chatPanel.classList.toggle('open');
-    chatFab.classList.toggle('active');
+    chatPanel.classList.contains('open') ? closeChat() : openChat();
+}
+
+function bumpUnread() {
+    if (!fabBadge || !chatFab) return;
+    const n = parseInt(fabBadge.dataset.count || '0', 10) + 1;
+    fabBadge.dataset.count = n;
+    fabBadge.textContent = n > 9 ? '9+' : n;
+    chatFab.classList.add('has-unread');
+}
+
+function clearUnread() {
+    if (!fabBadge || !chatFab) return;
+    fabBadge.dataset.count = '0';
+    fabBadge.textContent = '';
+    chatFab.classList.remove('has-unread');
 }
 
 /* ── Chat Collapse ── */

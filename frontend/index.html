@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dhwani — AI Music Editor</title>
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=9">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -130,6 +130,9 @@
             <button class="ch-toggle" id="chat-toggle" onclick="toggleChatPanel()" title="Collapse / Expand">
                 <span id="chat-chevron">&#9662;</span>
             </button>
+            <button class="ch-close" id="chat-close" onclick="closeChat()" title="Close">
+                &#10005;
+            </button>
         </div>
         <div class="chat-messages" id="chat-messages">
             <div class="msg assistant">
@@ -169,6 +172,6 @@
     <div id="toast" class="toast"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7.12.6/dist/wavesurfer.min.js"></script>
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=10"></script>
 </body>
 </html>
