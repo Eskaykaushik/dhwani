@@ -30,8 +30,21 @@
                     Choose File
                 </button>
                 <div class="upload-progress" id="upload-progress">
-                    <div class="upload-progress-bar" id="upload-progress-bar"></div>
-                    <span class="upload-progress-text" id="upload-progress-text">0%</span>
+                    <div class="up-row">
+                        <div class="up-track">
+                            <div class="up-bar" id="upload-progress-bar"></div>
+                        </div>
+                        <div class="up-status">
+                            <span class="up-label" id="upload-status-label">Uploading&hellip;</span>
+                            <span class="up-pct" id="upload-progress-text">0%</span>
+                        </div>
+                    </div>
+                    <div class="up-check" id="upload-check" aria-hidden="true">
+                        <svg class="up-check-svg" viewBox="0 0 52 52">
+                            <circle class="up-check-circle" cx="26" cy="26" r="23" fill="none"/>
+                            <path class="up-check-mark" fill="none" d="M14.1 27.2l7.1 7.1 16.7-16.8"/>
+                        </svg>
+                    </div>
                 </div>
             </div>
         </div>

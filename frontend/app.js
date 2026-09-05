@@ -33,9 +33,13 @@ function uploadFile(file) {
     const progressWrap = document.getElementById('upload-progress');
     const progressBar = document.getElementById('upload-progress-bar');
     const progressText = document.getElementById('upload-progress-text');
+    const statusLabel = document.getElementById('upload-status-label');
+
+    progressWrap.classList.remove('done', 'error');
     progressWrap.classList.add('active');
     progressBar.style.width = '0%';
     progressText.textContent = '0%';
+    statusLabel.textContent = 'Uploading…';
 
     const formData = new FormData();
     formData.append('file', file);
@@ -43,15 +47,21 @@ function uploadFile(file) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API}/upload`);
     xhr.upload.onprogress = e => {
-        if (e.lengthComputable) {
-            const pct = Math.round((e.loaded / e.total) * 100);
-            progressBar.style.width = pct + '%';
-            progressText.textContent = pct + '%';
+        if (!e.lengthComputable) return;
+        const pct = Math.round((e.loaded / e.total) * 100);
+        progressBar.style.width = pct + '%';
+        progressText.textContent = pct + '%';
+        if (pct >= 100) {
+            progressBar.style.width = '100%';
+            progressText.textContent = '100%';
+            statusLabel.textContent = 'Processing…';
         }
     };
     xhr.onload = () => {
-        progressWrap.classList.remove('active');
-        if (xhr.status !== 200) { showToast('Upload failed', 'error'); return; }
+        if (xhr.status !== 200) {
+            uploadFailed(progressWrap, progressBar, progressText, statusLabel);
+            return;
+        }
         const data = JSON.parse(xhr.responseText);
         currentFileId = data.file_id;
 
@@ -59,15 +69,29 @@ function uploadFile(file) {
         document.getElementById('file-meta').textContent =
             `${fmtTime(data.duration)} · ${data.sample_rate}Hz · ${data.channels}ch${data.bpm ? ' · ' + Math.round(data.bpm) + ' BPM' : ''}`;
 
-        uploadScreen.classList.remove('active');
-        editorScreen.classList.add('active');
+        progressWrap.classList.add('done');
+        setTimeout(() => {
+            progressWrap.classList.remove('active', 'done');
+            uploadScreen.classList.remove('active');
+            editorScreen.classList.add('active');
 
-        initWaveform();
-        loadVersions();
-        showToast('File loaded', 'success');
+            initWaveform();
+            loadVersions();
+            showToast('File loaded', 'success');
+        }, 900);
     };
-    xhr.onerror = () => { progressWrap.classList.remove('active'); showToast('Upload failed', 'error'); };
+    xhr.onerror = () => {
+        uploadFailed(progressWrap, progressBar, progressText, statusLabel);
+    };
     xhr.send(formData);
+}
+
+function uploadFailed(wrap, bar, text, label) {
+    bar.style.width = '100%';
+    text.textContent = 'Failed';
+    label.textContent = 'Upload failed';
+    wrap.classList.add('error');
+    showToast('Upload failed', 'error');
 }
 
 /* ── Waveform ── */
