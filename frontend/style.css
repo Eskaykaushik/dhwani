@@ -674,6 +674,10 @@ body.chat-open .editor-layout { padding-right: 380px; }
 @media (max-width: 800px) {
     .tagline { display: none; }
 
+    body { overflow-y: auto; }
+    .app { height: auto; min-height: 100vh; }
+    #editor-screen.active { overflow: visible; }
+
     .site-footer { padding: 20px 16px; }
 
     .editor-layout { flex-direction: column; padding-right: 0; }
