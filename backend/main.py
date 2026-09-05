@@ -137,6 +137,15 @@ async def get_audio(file_id: str, version: int | None = None):
     return FileResponse(current, media_type=media_type)
 
 
+@app.get("/download/{file_id}")
+async def download_audio(file_id: str, version: int | None = None):
+    validate_file_id(file_id)
+    current = get_specific_file(file_id, version)
+    if not current:
+        raise HTTPException(status_code=404, detail="Audio not found")
+    return FileResponse(current, filename=Path(current).name)
+
+
 @app.get("/waveform/{file_id}")
 async def get_waveform(file_id: str):
     validate_file_id(file_id)

@@ -377,20 +377,21 @@ async function loadVersions() {
         const list = document.getElementById('versions-list');
         list.innerHTML = '';
 
-        const orig = mkEl('div', 'v-item active', '<span class="v-dot"></span><span class="v-label">Original</span>');
+        const orig = mkEl('div', 'v-item active',
+            '<span class="v-dot"></span><span class="v-label">Original</span><button class="v-dl" title="Download" onclick="event.stopPropagation(); downloadVer(0)">&#11015;</button>');
         orig.onclick = () => { loadVer(0, orig); };
         list.appendChild(orig);
 
         data.versions.forEach(v => {
             const item = mkEl('div', 'v-item',
-                `<span class="v-dot"></span><span class="v-label">v${v.version}: ${esc(v.operation)}</span>`);
+                `<span class="v-dot"></span><span class="v-label">v${v.version}: ${esc(v.operation)}</span><button class="v-dl" title="Download" onclick="event.stopPropagation(); downloadVer(${v.version})">&#11015;</button>`);
             item.onclick = () => { loadVer(v.version, item); };
             list.appendChild(item);
         });
 
         if (data.versions.length) {
             const last = data.versions[data.versions.length - 1];
-            setVersionsActive(`v${last.version}: ${last.operation}`);
+            setVersionsActive(`v${last.version}`);
         }
     } catch (err) {
         console.error('Failed to load versions');
@@ -398,12 +399,13 @@ async function loadVersions() {
 }
 
 function setVersionsActive(label) {
-    const el = document.getElementById('versions-active');
+    const el = document.getElementById('fi-versions-label');
     if (el) el.textContent = label;
 }
 
 function toggleVersions() {
-    document.querySelector('.versions-panel').classList.toggle('open');
+    document.getElementById('versions-dropdown').classList.toggle('open');
+    document.getElementById('fi-versions').classList.toggle('open');
 }
 
 function loadVer(version, el) {
@@ -413,8 +415,17 @@ function loadVer(version, el) {
     }
     document.querySelectorAll('.v-item').forEach(i => i.classList.remove('active'));
     if (el) el.classList.add('active');
-    const label = el ? el.querySelector('.v-label').textContent : 'Original';
-    setVersionsActive(label.trim());
+    setVersionsActive(version ? `v${version}` : 'v0');
+}
+
+function downloadVer(version) {
+    const q = version ? `?version=${version}` : '?version=0';
+    const a = document.createElement('a');
+    a.href = `${API}/download/${currentFileId}${q}`;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 }
 
 /* ── Operation Labels ── */

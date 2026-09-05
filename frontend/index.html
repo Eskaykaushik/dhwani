@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dhwani — AI Music Editor</title>
-    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="stylesheet" href="style.css?v=12">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -57,6 +57,18 @@
                         <span class="fi-icon">&#127925;</span>
                         <span class="fi-name" id="file-name">-</span>
                         <span class="fi-meta" id="file-meta"></span>
+                        <button class="fi-versions" id="fi-versions" onclick="toggleVersions()" title="Versions">
+                            <span id="fi-versions-label">v0</span>
+                            <span class="versions-chevron" id="versions-chevron">&#9660;</span>
+                        </button>
+                    </div>
+                    <div class="versions-dropdown" id="versions-dropdown">
+                        <div id="versions-list" class="versions-list">
+                            <div class="v-item active">
+                                <span class="v-dot"></span>
+                                <span class="v-label">Original</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="waveform-wrap" id="waveform-wrap">
@@ -85,22 +97,6 @@
                             <span class="vol-icon" id="vol-toggle" onclick="toggleMute()">&#128266;</span>
                             <input type="range" id="volume-slider" min="0" max="100" value="80"
                                    oninput="setVolume(this.value)">
-                        </div>
-                    </div>
-
-                    <div class="versions-panel">
-                        <div class="versions-head" id="versions-head" onclick="toggleVersions()">
-                            <h3>Version History</h3>
-                            <span class="versions-active" id="versions-active">Original</span>
-                            <span class="versions-chevron" id="versions-chevron">&#9660;</span>
-                        </div>
-                        <div class="versions-body" id="versions-body">
-                            <div id="versions-list" class="versions-list">
-                                <div class="v-item active">
-                                    <span class="v-dot"></span>
-                                    <span class="v-label">Original</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -182,6 +178,6 @@
     <div id="toast" class="toast"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7.12.6/dist/wavesurfer.min.js"></script>
-    <script src="app.js?v=10"></script>
+    <script src="app.js?v=11"></script>
 </body>
 </html>
