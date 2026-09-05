@@ -351,7 +351,7 @@ async function loadVersions() {
         list.innerHTML = '';
 
         const orig = mkEl('div', 'v-item active', '<span class="v-dot"></span><span class="v-label">Original</span>');
-        orig.onclick = () => { loadVer(null, orig); };
+        orig.onclick = () => { loadVer(0, orig); };
         list.appendChild(orig);
 
         data.versions.forEach(v => {
@@ -381,7 +381,7 @@ function toggleVersions() {
 
 function loadVer(version, el) {
     if (wavesurfer) {
-        const q = version ? `?version=${version}` : '';
+        const q = version ? `?version=${version}` : '?version=0';
         wavesurfer.load(`${API}/audio/${currentFileId}${q}`);
     }
     document.querySelectorAll('.v-item').forEach(i => i.classList.remove('active'));
