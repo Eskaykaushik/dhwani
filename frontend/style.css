@@ -640,6 +640,10 @@ body {
 
     .chat-fab { display: flex; align-items: center; justify-content: center; }
     .chat-fab.active { transform: rotate(45deg); }
+    .chat-fab .fab-icon { display: flex; align-items: center; justify-content: center; }
+    .chat-fab .fab-icon-close { display: none; }
+    .chat-fab.active .fab-icon-chat { display: none; }
+    .chat-fab.active .fab-icon-close { display: flex; }
 
     .player-bar { gap: 6px; padding: 8px 12px; }
     .p-btn { width: 34px; height: 34px; font-size: 13px; }

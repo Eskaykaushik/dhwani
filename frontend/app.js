@@ -223,6 +223,13 @@ async function sendMessage(e) {
         const data = await res.json();
         await addMsg(data.reply, 'assistant', data.operation);
         avatarPop();
+
+        if (data.operation && window.innerWidth <= 800) {
+            setTimeout(async () => {
+                const ok = await applyOp(null, data.operation);
+                if (ok) toggleChat();
+            }, 1000);
+        }
     } catch {
         typing.remove();
         setAvatarThinking(false);
@@ -320,8 +327,10 @@ function addTyping() {
 
 /* ── Apply ── */
 async function applyOp(btn, op) {
-    btn.disabled = true;
-    btn.classList.add('loading');
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.add('loading');
+    }
     try {
         const res = await fetch(`${API}/apply`, {
             method: 'POST',
@@ -330,18 +339,24 @@ async function applyOp(btn, op) {
         });
         if (!res.ok) throw new Error('Apply failed');
         const data = await res.json();
-        btn.classList.remove('loading');
-        btn.querySelector('.btn-label').textContent = 'Applied ✓';
-        btn.style.background = 'var(--success)';
-        spawnBurst(btn);
+        if (btn) {
+            btn.classList.remove('loading');
+            btn.querySelector('.btn-label').textContent = 'Applied ✓';
+            btn.style.background = 'var(--success)';
+            spawnBurst(btn);
+        }
         wavesurfer.load(`${API}/audio/${currentFileId}`);
         await loadVersions();
         showToast(`Version ${data.version} applied`, 'success');
+        return true;
     } catch {
-        btn.classList.remove('loading');
-        btn.disabled = false;
-        btn.querySelector('.btn-label').textContent = 'Retry';
+        if (btn) {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+            btn.querySelector('.btn-label').textContent = 'Retry';
+        }
         showToast('Apply failed', 'error');
+        return false;
     }
 }
 
@@ -433,9 +448,6 @@ chatMessages.addEventListener('scroll', () => {
 function toggleChat() {
     chatPanel.classList.toggle('open');
     chatFab.classList.toggle('active');
-    chatFab.innerHTML = chatPanel.classList.contains('open')
-        ? '&#10005;'
-        : '&#128172;<span class="fab-badge" id="fab-badge"></span>';
 }
 
 /* ── Chat Collapse ── */
