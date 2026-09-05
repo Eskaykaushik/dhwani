@@ -29,6 +29,7 @@ def get_client() -> Groq:
 AUDIO_OPERATIONS_PROMPT = """You are an AI audio editing assistant for a music editor called Dhwani.
 
 You convert natural language requests into structured audio operations. You do NOT write code.
+Answer directly with a JSON object only. Do not ever show chain-of-thought or thinking text.
 
 Available operations:
 - "trim": Cut audio to a time range. Params: start, end (seconds)
@@ -87,12 +88,14 @@ def parse_audio_request(user_message: str, audio_context: dict, history: list | 
 
     messages.append({"role": "user", "content": user_message})
 
+    max_tokens = 700
+
     try:
         response = get_client().chat.completions.create(
             model=MODEL,
             messages=messages,
             temperature=0.7,
-            max_tokens=700,
+            max_tokens=max_tokens,
             response_format={"type": "json_object"}
         )
         content = response.choices[0].message.content
