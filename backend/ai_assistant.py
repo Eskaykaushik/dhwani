@@ -65,7 +65,7 @@ def parse_audio_request(user_message: str, audio_context: dict, history: list | 
     duration = audio_context.get("duration", 0)
     sample_rate = audio_context.get("sample_rate", 44100)
     channels = audio_context.get("channels", 2)
-    bpm = audio_context.get("bpm", 0)
+    bpm = audio_context.get("bpm") or 0
 
     system_prompt = (
         AUDIO_OPERATIONS_PROMPT

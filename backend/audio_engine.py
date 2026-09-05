@@ -32,21 +32,12 @@ def ensure_dirs():
 
 
 def get_audio_info(filepath: str) -> dict:
-    y, sr = librosa.load(filepath, sr=None, mono=False)
-    duration = librosa.get_duration(y=y, sr=sr)
-
-    if y.ndim == 1:
-        channels = 1
-    else:
-        channels = y.shape[0]
-
-    tempo, _ = librosa.beat.beat_track(y=y if y.ndim == 1 else y[0], sr=sr)
-
+    info = sf.info(filepath)
     return {
-        "duration": float(duration),
-        "sample_rate": int(sr),
-        "channels": channels,
-        "bpm": float(tempo) if tempo else None
+        "duration": float(info.duration),
+        "sample_rate": int(info.samplerate),
+        "channels": int(info.channels),
+        "bpm": None
     }
 
 
