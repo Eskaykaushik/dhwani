@@ -125,18 +125,38 @@ body {
 .upload-area p { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
 .upload-area .btn-primary { min-width: 140px; }
 
-.upload-progress {
-    width: 100%; margin-top: 22px;
-    position: relative;
-    min-height: 52px;
-    display: none;
-}
-.upload-progress.active { display: block; }
+.upload-area #upload-idle { transition: opacity 0.25s ease; }
+.upload-area.uploading #upload-idle { opacity: 0; pointer-events: none; }
 
-.up-row { transition: opacity 0.25s ease, transform 0.25s ease; }
+.upload-progress {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 4px 8px;
+}
+.upload-area.uploading .upload-progress { display: flex; }
+
+.up-filename {
+    font-size: 12px; color: var(--text-muted);
+    max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.up-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 44px; font-weight: 500; line-height: 1;
+    background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.upload-progress.error .up-pct {
+    background: none; -webkit-text-fill-color: var(--error);
+    color: var(--error);
+}
+.upload-progress.done .up-pct { color: var(--success); }
 
 .up-track {
-    width: 100%; height: 8px;
+    width: 100%; height: 10px;
     background: var(--bg-hover);
     border-radius: 6px;
     overflow: hidden;
@@ -146,48 +166,41 @@ body {
     background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
     border-radius: 6px;
     transition: width 0.2s ease;
-    box-shadow: 0 0 10px rgba(20, 184, 166, 0.35);
+    box-shadow: 0 0 12px rgba(20, 184, 166, 0.4);
 }
-.upload-progress.done .up-row {
-    opacity: 0; transform: translateY(6px);
+.upload-progress.error .up-bar {
+    background: var(--error);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
+}
+.upload-progress.done .up-bar {
+    background: var(--success);
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
 }
 
 .up-status {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 8px;
+    font-size: 13px; color: var(--text-secondary);
+    min-height: 18px;
 }
-.up-label { font-size: 11px; color: var(--text-muted); }
-.up-pct {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px; color: var(--text-secondary);
-}
-
-.upload-progress.error .up-bar {
-    background: var(--error);
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
-}
-.upload-progress.error .up-label,
-.upload-progress.error .up-pct { color: var(--error); }
-.upload-progress.done .up-pct { color: var(--success); }
 
 .up-check {
-    position: absolute; top: 0; left: 0; right: 0;
-    min-height: 52px;
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     display: flex; align-items: center; justify-content: center;
-    opacity: 0; transform: scale(0.5);
+    background: var(--bg-surface);
+    border-radius: 20px;
+    opacity: 0; transform: scale(0.6);
     pointer-events: none;
     transition: opacity 0.25s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .upload-progress.done .up-check { opacity: 1; transform: scale(1); }
 
-.up-check-svg { width: 52px; height: 52px; }
+.up-check-svg { width: 72px; height: 72px; }
 .up-check-circle {
-    stroke: var(--success); stroke-width: 2; fill: none;
+    stroke: var(--success); stroke-width: 2.5; fill: none;
     stroke-dasharray: 145; stroke-dashoffset: 145;
     animation: checkStroke 0.5s cubic-bezier(0.65, 0, 0.45, 1) forwards;
 }
 .up-check-mark {
-    stroke: var(--success); stroke-width: 3; fill: none;
+    stroke: var(--success); stroke-width: 4; fill: none;
     stroke-linecap: round; stroke-linejoin: round;
     stroke-dasharray: 45; stroke-dashoffset: 45;
     animation: checkStroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards;

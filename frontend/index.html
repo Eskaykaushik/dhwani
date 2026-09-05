@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dhwani — AI Music Editor</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -20,25 +20,24 @@
         <!-- Upload Screen -->
         <div id="upload-screen" class="screen active">
             <div class="upload-area" id="drop-zone">
-                <div class="upload-icon-wrap">
-                    <span class="icon">&#127925;</span>
-                </div>
-                <h2>Drop your audio here</h2>
-                <p>MP3, WAV, OGG, FLAC, or M4A</p>
-                <input type="file" id="file-input" accept=".mp3,.wav,.ogg,.flac,.m4a" hidden>
-                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
-                    Choose File
-                </button>
-                <div class="upload-progress" id="upload-progress">
-                    <div class="up-row">
-                        <div class="up-track">
-                            <div class="up-bar" id="upload-progress-bar"></div>
-                        </div>
-                        <div class="up-status">
-                            <span class="up-label" id="upload-status-label">Uploading&hellip;</span>
-                            <span class="up-pct" id="upload-progress-text">0%</span>
-                        </div>
+                <div id="upload-idle">
+                    <div class="upload-icon-wrap">
+                        <span class="icon">&#127925;</span>
                     </div>
+                    <h2>Drop your audio here</h2>
+                    <p>MP3, WAV, OGG, FLAC, or M4A</p>
+                    <input type="file" id="file-input" accept=".mp3,.wav,.ogg,.flac,.m4a" hidden>
+                    <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                        Choose File
+                    </button>
+                </div>
+                <div class="upload-progress" id="upload-progress">
+                    <div class="up-filename" id="upload-filename"></div>
+                    <div class="up-pct" id="upload-progress-text">0%</div>
+                    <div class="up-track">
+                        <div class="up-bar" id="upload-progress-bar"></div>
+                    </div>
+                    <div class="up-status" id="upload-status-label">Uploading&hellip;</div>
                     <div class="up-check" id="upload-check" aria-hidden="true">
                         <svg class="up-check-svg" viewBox="0 0 52 52">
                             <circle class="up-check-circle" cx="26" cy="26" r="23" fill="none"/>
@@ -155,6 +154,6 @@
     <div id="toast" class="toast"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/wavesurfer.js@7.12.6/dist/wavesurfer.min.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=3"></script>
 </body>
 </html>

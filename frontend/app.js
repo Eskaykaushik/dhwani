@@ -30,13 +30,15 @@ dropZone.addEventListener('drop', e => {
 fileInput.addEventListener('change', e => { if (e.target.files.length) uploadFile(e.target.files[0]); });
 
 function uploadFile(file) {
+    const dropZone = document.getElementById('drop-zone');
     const progressWrap = document.getElementById('upload-progress');
     const progressBar = document.getElementById('upload-progress-bar');
     const progressText = document.getElementById('upload-progress-text');
     const statusLabel = document.getElementById('upload-status-label');
 
+    dropZone.classList.add('uploading');
     progressWrap.classList.remove('done', 'error');
-    progressWrap.classList.add('active');
+    document.getElementById('upload-filename').textContent = file.name;
     progressBar.style.width = '0%';
     progressText.textContent = '0%';
     statusLabel.textContent = 'Uploading…';
@@ -70,7 +72,9 @@ function uploadFile(file) {
             `${fmtTime(data.duration)} · ${data.sample_rate}Hz · ${data.channels}ch${data.bpm ? ' · ' + Math.round(data.bpm) + ' BPM' : ''}`;
 
         progressWrap.classList.add('done');
+        statusLabel.textContent = 'Uploaded ✓';
         setTimeout(() => {
+            dropZone.classList.remove('uploading');
             progressWrap.classList.remove('active', 'done');
             uploadScreen.classList.remove('active');
             editorScreen.classList.add('active');
