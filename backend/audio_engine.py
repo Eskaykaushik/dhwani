@@ -241,6 +241,33 @@ def apply_operation(file_id: str, operation: dict) -> tuple:
             drums = ((drums_l + drums_r) / 2.0)[None, :]
         y = np.clip(y + drums, -0.95, 0.95)
 
+    elif op_type == "denoise":
+        import noisereduce
+
+        raw = operation.get("strength")
+        strength = float(raw) if isinstance(raw, (int, float)) and raw is not None else 0.6
+        strength = max(0.0, min(1.0, strength))
+
+        n_fft = 1024
+        smooth_ms = max(64.0, 1.5 * n_fft * 1000.0 / sr)
+
+        def _denoise_channel(ch):
+            return noisereduce.reduce_noise(
+                y=ch.astype(np.float32),
+                sr=sr,
+                prop_decrease=strength,
+                stationary=True,
+                n_fft=n_fft,
+                time_mask_smooth_ms=smooth_ms,
+                use_tqdm=False,
+            )
+
+        if y.shape[1] >= 2 * n_fft:
+            if y.shape[0] > 1:
+                y = np.array([_denoise_channel(ch) for ch in y])
+            else:
+                y = _denoise_channel(y[0])[None, :]
+
     else:
         raise ValueError(f"Unknown operation: {op_type}")
 
@@ -259,6 +286,8 @@ def apply_operation(file_id: str, operation: dict) -> tuple:
         op_name = f"pitch ({operation.get('semitones', 0)} semitones)"
     elif op_type == "beat":
         op_name = f"beat ({intensity:.0%})"
+    elif op_type == "denoise":
+        op_name = f"denoise ({strength:.0%})"
 
     fd, tmp_path = tempfile.mkstemp(dir=str(OUTPUT_DIR), suffix=".wav")
     os.close(fd)

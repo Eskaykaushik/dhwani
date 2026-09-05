@@ -640,6 +640,7 @@ function getOpLabel(op) {
         pitch:   { icon: '🎵', label: 'Pitch', detail: () => `${op.semitones>0?'+':''}${op.semitones} semitones` },
         tempo:   { icon: '⚡', label: 'Tempo', detail: () => `${op.factor||1}x` },
         beat:   { icon: '🥁', label: 'Beat Layer', detail: () => `mix ${Math.round((op.intensity ?? 0.45) * 100)}%` },
+        denoise:{ icon: '🧹', label: 'Noise Reduction', detail: () => `strength ${Math.round((op.strength ?? 0.6) * 100)}%` },
     };
     const info = map[op.operation] || { icon: '🔧', label: op.operation || 'Edit', detail: () => null };
     return { icon: info.icon, label: info.label, detail: info.detail() };

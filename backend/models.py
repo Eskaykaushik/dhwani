@@ -39,6 +39,7 @@ class AudioOperation(BaseModel):
     semitones: float | None = None
     factor: float | None = None
     intensity: float | None = None
+    strength: float | None = None
 
 
 class ApplyRequest(BaseModel):

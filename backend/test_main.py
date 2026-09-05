@@ -1,5 +1,6 @@
 import asyncio
 import io
+import random
 import struct
 import wave
 
@@ -38,6 +39,19 @@ def make_wav(duration=0.1, sample_rate=4000, channels=1) -> bytes:
     return buf.getvalue()
 
 
+def make_noisy_wav(duration=1.0, sample_rate=4000) -> bytes:
+    buf = io.BytesIO()
+    n_frames = int(sample_rate * duration)
+    rng = random.Random(42)  # noqa: S311 — deterministic test noise
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sample_rate)
+        frames = struct.pack(f"<{n_frames}h", *(rng.randint(-1200, 1200) for _ in range(n_frames)))
+        w.writeframes(frames)
+    return buf.getvalue()
+
+
 SKIP_AUDIO_DURATION = 1.0
 
 
@@ -62,6 +76,7 @@ def test_coerce_operation_normalizes_shapes():
     assert ai_assistant.coerce_operation({"operation": "bogus"}) is None
     assert ai_assistant.coerce_operation(123) is None
     assert ai_assistant.coerce_operation("beat") == {"operation": "beat"}
+    assert ai_assistant.coerce_operation("denoise") == {"operation": "denoise"}
     assert ai_assistant.coerce_operation({"operation": "layer", "file_id": "abc12345"}) is None
 
 
@@ -218,6 +233,27 @@ def test_beat_layer_creates_version_and_changes_audio(client):
     assert len(versions) == 1
     assert versions[0]["operation"].startswith("beat")
     assert versions[0]["operation"].endswith("%") or "100%" in versions[0]["operation"]
+
+    altered = client.get(f"/audio/{file_id}").content
+    assert len(altered) > 0
+    assert altered != original
+
+
+def test_denoise_creates_version_and_changes_audio(client):
+    up = client.post("/upload", files={"file": ("t.wav", make_noisy_wav(), "audio/wav")})
+    file_id = up.json()["file_id"]
+    original = client.get(f"/audio/{file_id}").content
+
+    resp = client.post(
+        "/apply",
+        json={"file_id": file_id, "operation": {"operation": "denoise", "strength": 2}},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["version"] == 1
+
+    versions = client.get(f"/versions/{file_id}").json()["versions"]
+    assert len(versions) == 1
+    assert versions[0]["operation"] == "denoise (100%)"
 
     altered = client.get(f"/audio/{file_id}").content
     assert len(altered) > 0
