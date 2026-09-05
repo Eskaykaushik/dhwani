@@ -35,6 +35,7 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* ── Header ── */
+body:not(.app-editor) .header { display: none; }
 .header {
     display: flex;
     align-items: center;
@@ -86,6 +87,16 @@ body {
 @media (min-width: 801px) {
     body.app-editor .site-footer { display: none; }
 }
+body:not(.app-editor) .site-footer {
+    position: fixed; bottom: 14px; left: 0; right: 0;
+    border-top: none;
+    padding: 8px 16px;
+    font-size: 11px;
+    background: transparent;
+    z-index: 5;
+}
+body:not(.app-editor) .site-footer p { display: inline; margin: 0; }
+body:not(.app-editor) .site-footer p + p { display: inline; }
 
 /* ── Screens ── */
 .app {
@@ -120,15 +131,15 @@ body {
     margin-bottom: auto;
 }
 
-.upload-hero { text-align: center; max-width: 560px; }
+.upload-hero { text-align: center; max-width: 600px; }
 .hero-eyebrow {
-    font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase;
-    color: var(--text-muted); margin-bottom: 12px;
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 16px;
 }
 .hero-title {
-    font-size: clamp(24px, 4.5vw, 36px); font-weight: 700;
-    line-height: 1.15; letter-spacing: -0.5px;
-    margin-bottom: 12px;
+    font-size: clamp(28px, 5vw, 44px); font-weight: 600;
+    line-height: 1.12; letter-spacing: -0.02em;
+    margin-bottom: 16px;
 }
 .hero-title span {
     background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
@@ -136,25 +147,20 @@ body {
     background-clip: text;
 }
 .hero-sub {
-    color: var(--text-secondary); font-size: clamp(13px, 1.6vw, 15px);
-    line-height: 1.6; max-width: 420px; margin: 0 auto;
+    color: var(--text-secondary); font-size: 14px;
+    line-height: 1.65; max-width: 460px; margin: 0 auto;
 }
 
 /* Example cycler */
 .ex-cycler {
     display: flex; align-items: center; justify-content: center;
-    gap: 8px;
+    gap: 10px;
 }
-.ex-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+.ex-label { font-size: 10px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
 .ex-chip {
-    min-width: 248px; text-align: center;
-    padding: 8px 16px;
-    border: 1px solid var(--border);
-    background: var(--bg-surface);
     color: var(--text-secondary);
-    border-radius: 999px;
     font-family: 'JetBrains Mono', 'SF Mono', monospace;
-    font-size: 12px;
+    font-size: 12.5px;
     transition: opacity 0.26s ease, transform 0.26s ease;
 }
 .ex-chip.swap { opacity: 0; transform: translateY(4px); }
@@ -162,39 +168,21 @@ body {
 .upload-area {
     width: 100%; max-width: 440px;
     padding: 56px 40px;
-    border: 1.5px dashed var(--border);
-    border-radius: 20px;
+    border: 1px solid var(--border);
+    border-radius: 24px;
     text-align: center;
     background: var(--bg-surface);
     cursor: pointer;
     transition: all 0.25s ease;
     position: relative;
 }
-.upload-area::before {
-    content: '';
-    position: absolute; inset: -5px;
-    border-radius: 24px;
-    padding: 2px;
-    background: conic-gradient(from 0deg, var(--accent-start), var(--accent-end), var(--accent-start));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease;
-    animation: ringSpin 3.5s linear infinite;
-}
-.upload-area:hover::before { opacity: 0.35; }
-.upload-area.drag-over::before { opacity: 1; }
-@keyframes ringSpin { to { transform: rotate(360deg); } }
 .upload-area:hover, .upload-area.drag-over {
     border-color: var(--accent-start);
-    box-shadow: 0 0 60px rgba(99, 102, 241, 0.08), 0 0 0 1px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 60px rgba(99, 102, 241, 0.08), 0 0 0 1px rgba(99, 102, 241, 0.12);
 }
 .upload-area.drag-over {
-    transform: scale(1.01);
-    box-shadow: 0 0 90px rgba(99, 102, 241, 0.18), 0 0 0 1px rgba(99, 102, 241, 0.25);
+    transform: scale(1.008);
+    box-shadow: 0 0 90px rgba(99, 102, 241, 0.16), 0 0 0 1px rgba(99, 102, 241, 0.22);
 }
 
 .upload-icon-wrap {
@@ -203,27 +191,13 @@ body {
     border-radius: 50%;
     background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(20,184,166,0.15));
     display: flex; align-items: center; justify-content: center;
-    animation: float 3s ease-in-out infinite;
-    position: relative;
-}
-.upload-icon-wrap::after {
-    content: '';
-    position: absolute; inset: -10px;
-    border-radius: 50%;
-    border: 1px solid rgba(99,102,241,0.35);
-    opacity: 0;
-    animation: iconPulse 3s ease-out infinite;
-}
-@keyframes iconPulse {
-    0%   { transform: scale(0.7); opacity: 0.6; }
-    70%  { opacity: 0; }
-    100% { transform: scale(1.35); opacity: 0; }
+    animation: float 4s ease-in-out infinite;
 }
 .upload-icon-wrap .icon { font-size: 32px; }
 
 @keyframes float {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
+    50% { transform: translateY(-4px); }
 }
 
 .upload-area h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
