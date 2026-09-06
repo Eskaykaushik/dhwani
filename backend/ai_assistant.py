@@ -14,7 +14,7 @@ MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
 
 KNOWN_OPS = {
     "trim", "volume", "fade_in", "fade_out", "normalize",
-    "eq", "compress", "reverb", "delay", "pitch", "tempo", "beat", "denoise",
+    "eq", "compress", "reverb", "delay", "pitch", "tempo", "beat", "denoise", "enhance",
 }
 
 _client = None
@@ -45,6 +45,7 @@ Available operations:
 - "tempo": Change tempo. Params: factor (1.0 = same, 1.5 = 50% faster, 0.5 = half speed)
 - "beat": Overlay a synthesized beat/drum layer (kick, snare, hi-hats) on the track. Params: intensity (0.0 to 1.0, higher = stronger/more prominent, default 0.45); use a higher intensity for requests like "strong beat"
 - "denoise": Remove stationary background noise / hiss / hum from the track. Params: strength (0.0 to 1.0, default 0.6); use higher values like 0.85 for "remove a lot of noise"
+- "enhance": One-click overall enhancement: removes noise/hiss, rolls off low rumble, tightens levels, and normalizes loudness for a polished result. Params: strength (0.0 to 1.0, denoise amount, default 0.55). Use for "enhance this track", "make it sound polished/professional/better overall"
 
 Respond with a JSON object containing:
 1. "reply": A friendly message explaining what you'll do

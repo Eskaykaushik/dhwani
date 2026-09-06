@@ -678,6 +678,18 @@ body.chat-open .editor-layout { padding-right: 380px; }
     transition: all 0.15s;
 }
 .q-btn:hover { border-color: var(--accent-start); color: var(--accent-start); }
+.quick-actions {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-top: 10px;
+}
+.q-action {
+    padding: 7px 14px; font-size: 12px;
+    border-color: var(--accent-start);
+    color: var(--accent-start);
+    background: linear-gradient(180deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.08));
+}
+.q-action:hover { background: linear-gradient(180deg, rgba(139, 92, 246, 0.16), rgba(59, 130, 246, 0.16)); }
+.q-action.loading { opacity: 0.55; pointer-events: none; }
 .chat-input-area form { display: flex; gap: 6px; }
 #chat-input {
     flex: 1; padding: 9px 13px;
@@ -980,6 +992,7 @@ button, .btn, .p-btn, .q-btn, .v-item, .v-dl, .fi-versions,
     .p-btn:hover { background: var(--bg-elevated); }
     .p-btn:hover .shortcut { opacity: 0; }
     .q-btn:hover { border-color: var(--border); color: var(--text-secondary); }
+    .q-action:hover { border-color: var(--accent-start); color: var(--accent-start); background: linear-gradient(180deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.08)); }
     .btn-primary:hover { opacity: 1; transform: none; }
     .btn-primary:hover::after { animation: none; }
     .btn-ghost:hover { border-color: var(--border); color: var(--text-secondary); transform: none; }

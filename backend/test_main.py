@@ -77,6 +77,7 @@ def test_coerce_operation_normalizes_shapes():
     assert ai_assistant.coerce_operation(123) is None
     assert ai_assistant.coerce_operation("beat") == {"operation": "beat"}
     assert ai_assistant.coerce_operation("denoise") == {"operation": "denoise"}
+    assert ai_assistant.coerce_operation("enhance") == {"operation": "enhance"}
     assert ai_assistant.coerce_operation({"operation": "layer", "file_id": "abc12345"}) is None
 
 
@@ -254,6 +255,27 @@ def test_denoise_creates_version_and_changes_audio(client):
     versions = client.get(f"/versions/{file_id}").json()["versions"]
     assert len(versions) == 1
     assert versions[0]["operation"] == "denoise (100%)"
+
+    altered = client.get(f"/audio/{file_id}").content
+    assert len(altered) > 0
+    assert altered != original
+
+
+def test_enhance_creates_version_and_changes_audio(client):
+    up = client.post("/upload", files={"file": ("t.wav", make_noisy_wav(), "audio/wav")})
+    file_id = up.json()["file_id"]
+    original = client.get(f"/audio/{file_id}").content
+
+    resp = client.post(
+        "/apply",
+        json={"file_id": file_id, "operation": {"operation": "enhance", "strength": 0.55}},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["version"] == 1
+
+    versions = client.get(f"/versions/{file_id}").json()["versions"]
+    assert len(versions) == 1
+    assert versions[0]["operation"] == "enhance"
 
     altered = client.get(f"/audio/{file_id}").content
     assert len(altered) > 0

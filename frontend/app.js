@@ -551,6 +551,15 @@ async function applyOp(btn, op) {
     }
 }
 
+/* ── Quick Actions ── */
+async function quickApply(op, btn) {
+    btn.disabled = true;
+    btn.classList.add('loading');
+    const ok = await applyOp(null, op);
+    btn.classList.remove('loading');
+    btn.disabled = false;
+}
+
 /* ── Versions ── */
 async function loadVersions() {
     if (!currentFileId) return;
@@ -641,6 +650,7 @@ function getOpLabel(op) {
         tempo:   { icon: '⚡', label: 'Tempo', detail: () => `${op.factor||1}x` },
         beat:   { icon: '🥁', label: 'Beat Layer', detail: () => `mix ${Math.round((op.intensity ?? 0.45) * 100)}%` },
         denoise:{ icon: '🧹', label: 'Noise Reduction', detail: () => `strength ${Math.round((op.strength ?? 0.6) * 100)}%` },
+        enhance:{ icon: '✨', label: 'Enhance Audio', detail: () => null },
     };
     const info = map[op.operation] || { icon: '🔧', label: op.operation || 'Edit', detail: () => null };
     return { icon: info.icon, label: info.label, detail: info.detail() };

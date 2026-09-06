@@ -268,6 +268,43 @@ def apply_operation(file_id: str, operation: dict) -> tuple:
             else:
                 y = _denoise_channel(y[0])[None, :]
 
+    elif op_type == "enhance":
+        raw = operation.get("strength")
+        strength = float(raw) if isinstance(raw, (int, float)) and raw is not None else 0.55
+        strength = max(0.0, min(1.0, strength))
+
+        if y.shape[1] >= 2 * 1024:
+            import noisereduce
+
+            smooth_ms = max(64.0, 1.5 * 1024 * 1000.0 / sr)
+
+            def _denoise_chan(ch):
+                return noisereduce.reduce_noise(
+                    y=ch.astype(np.float32),
+                    sr=sr,
+                    prop_decrease=strength,
+                    stationary=True,
+                    n_fft=1024,
+                    time_mask_smooth_ms=smooth_ms,
+                    use_tqdm=False,
+                )
+
+            if y.shape[0] > 1:
+                y = np.array([_denoise_chan(ch) for ch in y])
+            else:
+                y = _denoise_chan(y[0])[None, :]
+
+        board = Pedalboard([
+            HighpassFilter(cutoff_frequency_hz=35),
+            Compressor(threshold_db=-24, ratio=2.5, attack_ms=10, release_ms=120),
+        ])
+        for ch in range(y.shape[0]):
+            y[ch] = board(y[ch].astype(np.float32), sr)
+
+        max_val = np.max(np.abs(y))
+        if max_val > 0:
+            y = y / max_val * 0.89
+
     else:
         raise ValueError(f"Unknown operation: {op_type}")
 
